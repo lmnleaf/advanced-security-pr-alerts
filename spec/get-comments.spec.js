@@ -9,22 +9,22 @@ describe("Get Comments", function() {
     { 
       user: { login: 'github-advanced-security[bot]' }, 
       pull_request_url: 'https://api.github.com/repos/org/repo/pulls/10', 
-      created_at: new Date().toISOString() 
+      updated_at: new Date().toISOString() 
     }, // Comment from today
     { 
       user: { login: 'commenter1' }, 
       pull_request_url: 'https://api.github.com/repos/org/repo/pulls/9', 
-      created_at: new Date(Date.now() - (24 * 60 * 60 * 1000 * 15)).toISOString() 
+      updated_at: new Date(Date.now() - (24 * 60 * 60 * 1000 * 15)).toISOString() 
     }, // Comment from 15 days ago
     { 
       user: { login: 'commenter2' }, 
       pull_request_url: 'https://api.github.com/repos/org/repo/pulls/9', 
-      created_at: new Date(Date.now() - (24 * 60 * 60 * 1000 * 17)).toISOString() 
+      updated_at: new Date(Date.now() - (24 * 60 * 60 * 1000 * 17)).toISOString() 
     }, // Comment from 17 days ago
     { 
       user: { login: 'commenter2' }, 
       pull_request_url: 'https://api.github.com/repos/org/repo/pulls/7', 
-      created_at: new Date(Date.now() - (24 * 60 * 60 * 1000 * 31)).toISOString() 
+      updated_at: new Date(Date.now() - (24 * 60 * 60 * 1000 * 31)).toISOString() 
     } // Comment from 31 days ago
   ]
 
@@ -37,8 +37,20 @@ describe("Get Comments", function() {
 
     expect(octokit.paginate).toHaveBeenCalled();
     expect(comments.length).toBe(3); // E xpecting 3 comments that are within the last 30 days
-    expect(new Date(comments[0].created_at) <= new Date()).toBeTrue();
-    expect(new Date(comments[1].created_at) <= new Date()).toBeTrue();
-    expect(new Date(comments[2].created_at) <= new Date()).toBeTrue();
+    expect(new Date(comments[0].updated_at) <= new Date()).toBeTrue();
+    expect(new Date(comments[1].updated_at) <= new Date()).toBeTrue();
+    expect(new Date(comments[2].updated_at) <= new Date()).toBeTrue();
   });
+
+  it('handles errors', async function() {
+    spyOn(globalThis, 'fetch').and.callFake(function() {
+      return Promise.reject(new Error('fetch error'));
+    });
+
+    try {
+      await getComments(owner, repo, octokit);
+    } catch (error) {
+      expect(error).toEqual(new Error('fetch error'));
+    }
+  })
 });

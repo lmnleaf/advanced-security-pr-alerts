@@ -14,19 +14,17 @@ async function getComments(owner, repo, octokit) {
         per_page: 5
       },
       (response, done) => {
-        // stop on date or pr number
-        stopListingComments = response.data.find((comment) => new Date(comment.created_at) <= thirtyDaysAgo);
+        // stop on updated_at date
+        stopListingComments = response.data.find((comment) => new Date(comment.updated_at) <= thirtyDaysAgo);
         if (stopListingComments) {
-          console.log('Created At on First Comment: ', response.data[0].created_at);
           done();
         }
         comments.push(...response.data);
       }
   )} catch (error) {
-    // update this to throw error
-    console.error('Error:', error);
+    throw error;
   }
-  comments = comments.filter((comment) => new Date(comment.created_at) > thirtyDaysAgo);
+  comments = comments.filter((comment) => new Date(comment.updated_at) > thirtyDaysAgo);
   return comments;
 }
 
