@@ -1,4 +1,4 @@
-const getPRs = require('../src/get-prs.js');
+const getPRs = require('../src/repo-prs.js');
 const Moctokit = require('./support/moctokit.js');
 
 describe("Get PRs", function() {
@@ -83,7 +83,7 @@ describe("Get PRs", function() {
   });
 
   it('gets PRs for the past 30 days', async function () {
-    const prs = await getPRs(owner, repo, octokit);
+    const prs = await getPRs.getPRs(owner, repo, octokit);
 
     expect(octokit.paginate).toHaveBeenCalled();
     expect(prs.length).toBe(7); // Expecting 7 comments that are within the last 30 days
@@ -98,7 +98,7 @@ describe("Get PRs", function() {
     });
 
     try {
-      await getPRs(owner, repo, octokit);
+      await getPRs.getPRs(owner, repo, octokit);
     } catch (error) {
       expect(error).toEqual(new Error('fetch error'));
     }

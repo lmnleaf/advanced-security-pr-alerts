@@ -3,7 +3,6 @@ async function getPRs(owner, repo, octokit) {
   const daysAgo = new Date();
 
   // make number of days an optional parameter
-  // default 30
   daysAgo.setDate(new Date().getDate() - 30);
 
   try {
@@ -48,4 +47,4 @@ function filteredPrs(prs, daysAgo) {
   );
 }
 
-module.exports = getPRs
+module.exports = { getPRs }
