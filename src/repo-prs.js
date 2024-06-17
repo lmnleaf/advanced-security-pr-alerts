@@ -1,5 +1,5 @@
 async function getPRs(owner, repo, octokit) {
-  var prs = [];
+  let prs = [];
   const daysAgo = new Date();
 
   // make number of days an optional parameter

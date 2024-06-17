@@ -1,8 +1,8 @@
 const repoPRs = require('./repo-prs');
 
 async function getComments(owner, repo, octokit) {
-  var comments = [];
-  var prs = await repoPRs.getPRs(owner, repo, octokit);
+  let comments = [];
+  let prs = await repoPRs.getPRs(owner, repo, octokit);
 
   for (const pr of prs) {
     try {
