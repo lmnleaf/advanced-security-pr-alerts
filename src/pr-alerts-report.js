@@ -6,6 +6,7 @@ async function createReport(owner, repo, octokit) {
 
   try {
     const alerts = await getAlerts(owner, repo, octokit);
+
     alertNumbers = alerts.map((alert) => alert.number);
   
     const csvRows = alerts.map((alert) => [
@@ -27,7 +28,14 @@ async function createReport(owner, repo, octokit) {
       alert.dismissed_reason,
       alert.dismissed_comment,
       alert.created_at,
-      alert.updated_at
+      alert.updated_at,
+      alert.pr.repo,
+      alert.pr.number,
+      alert.pr.user,
+      alert.pr.state,
+      alert.pr.draft,
+      alert.pr.merged_at,
+      alert.pr.updated_at
     ]);
   
     csvRows.unshift([
@@ -49,7 +57,14 @@ async function createReport(owner, repo, octokit) {
       'dismissed_reason',
       'dismissed_comment',
       'created_at',
-      'updated_at'
+      'updated_at',
+      'repo',
+      'pr_number',
+      'pr_user',
+      'pr_state',
+      'pr_draft',
+      'pr_merged_at',
+      'pr_updated_at'
     ]);
   
     writeReport(csvRows);

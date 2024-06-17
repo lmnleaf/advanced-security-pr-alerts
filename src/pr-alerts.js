@@ -1,42 +1,47 @@
-const prComments = require('./pr-comments.js');
+const repoPRs = require('./repo-prs.js');
 
 async function getAlerts(owner, repo, octokit) {
-  let alertNumbers = [];
+  let prs = await repoPRs.getPRs(owner, repo, octokit);
+
   let alerts = [];
-  const comments = await prComments.getComments(owner, repo, octokit);
 
-  // have to get each individual alert because the 
-  // alerts on the PR are not returned in the code scanning API 
-  // unless the branch itself was scanned
+  for (const pr of prs) {
+    let prAlerts = [];
 
-  comments.forEach((comment) => {
-    const alertNumber = extractAlertNumber(comment.body);
-    if (alertNumber) {
-      alertNumbers.push(alertNumber);
-    }
-  })
-
-  for (const alertNumber of alertNumbers) {
     try {
-      const alert = await octokit.rest.codeScanning.getAlert({
-        owner,
-        repo,
-        alert_number: alertNumber
-      });
-
-      alerts.push(alert.data);
-    } catch (error) {
+      await octokit.paginate(
+        octokit.rest.codeScanning.listAlertsForRepo,
+        {
+          owner,
+          repo,
+          ref: `refs/pull/${pr.number}/head`,
+          // per_page should eventually be 100
+          per_page: 5,
+        },
+        (response, done) => {
+          prAlerts.push(...response.data);
+        }
+    )} catch (error) {
       throw error;
     }
+
+    let prAlertsWithAlertInfo = prAlerts.map((alert) => {
+      alert.pr = {
+        repo: pr.repo,
+        number: pr.number,
+        user: pr.user.login,
+        state: pr.state,
+        merged_at: pr.merged_at,
+        updated_at: pr.updated_at
+      };
+
+      return alert;
+    })
+
+    alerts = alerts.concat(prAlertsWithAlertInfo);
   }
 
   return alerts;
 }
 
-function extractAlertNumber(str) {
-  const regex = /\[Show more details\]\(https:\/\/.*?\/(\d+)\)/;
-  const matches = str.match(regex);
-  return matches ? matches[1] : null;
-}
-
-module.exports = getAlerts
+module.exports = getAlerts;

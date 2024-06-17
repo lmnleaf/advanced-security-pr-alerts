@@ -28,9 +28,11 @@ async function getPRs(owner, repo, octokit) {
   }
 
   prs = filteredPrs(prs, daysAgo).map((pr) => ({
+    repo: repo,
     number: pr.number,
     user: pr.user.login,
     state: pr.state,
+    draft: pr.draft,
     merged_at: pr.merged_at,
     updated_at: pr.updated_at
   }));
