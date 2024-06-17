@@ -1,16 +1,16 @@
-const getPRs = require('./repo-prs');
+const repoPRs = require('./repo-prs');
 
 async function getComments(owner, repo, octokit) {
   var comments = [];
-  var prs = await getPRs.getPRs(owner, repo, octokit);
+  var prs = await repoPRs.getPRs(owner, repo, octokit);
 
   for (const pr of prs) {
     try {
       await octokit.paginate(
         octokit.rest.pulls.listReviewComments,
         {
-          owner: 'octodemo',
-          repo: 'upgraded-octo-eureka',
+          owner,
+          repo,
           pull_number: pr.number,
           per_page: 5
         },
@@ -25,8 +25,7 @@ async function getComments(owner, repo, octokit) {
 
   comments = filterComments(comments).map((comment) => ({
     user: comment.user.login,
-    body: comment.body,
-    updated_at: comment.updated_at
+    body: comment.body
   }));
 
   return comments;
@@ -36,4 +35,4 @@ function filterComments (comments) {
   return comments.filter((comment) => comment.user.login === 'github-advanced-security[bot]');
 }
 
-module.exports = getComments
+module.exports = { getComments }

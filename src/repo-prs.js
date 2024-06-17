@@ -9,8 +9,8 @@ async function getPRs(owner, repo, octokit) {
     await octokit.paginate(
       octokit.rest.pulls.list,
       {
-        owner: owner,
-        repo: repo,
+        owner,
+        repo,
         state: 'all',
         // per page should eventually be 100
         per_page: 5
