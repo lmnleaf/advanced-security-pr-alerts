@@ -48,7 +48,7 @@ class Moctokit {
         dismissed_by: null,
         dismissed_reason: null,
         dismissed_comment: null,
-        fixed_at: null,
+        fixed_at: "2024-05-01T12:00:00Z",
         created_at: "2023-04-01T12:00:00Z",
         updated_at: "2023-04-02T12:00:00Z"
       }

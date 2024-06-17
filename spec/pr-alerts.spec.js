@@ -38,5 +38,16 @@ describe("Repo Alerts", function() {
       expect(alerts[i].number).toEqual(43);
     }
   });
-        
+
+  it('handles errors', async function() {
+    spyOn(globalThis, 'fetch').and.callFake(function() {
+      return Promise.reject(new Error('fetch error'));
+    });
+
+    try {
+      await getAlerts(owner, repo, octokit);
+    } catch (error) {
+      expect(error).toEqual(new Error('fetch error'));
+    }
+  })
 });
