@@ -4,6 +4,7 @@ import Moctokit from './support/moctokit.js';
 
 describe("PR Alerts", function() {
   let octokit;
+  let getPRsOriginal;
   let owner = 'org';
   let repo = 'repo';
   let mockData = [
@@ -98,9 +99,7 @@ describe("PR Alerts", function() {
 
   beforeEach(() => {
     octokit = new Moctokit(mockData);
-  });
 
-  it ('gets alerts from the repo for the PRs', async function() {
     // NOTE: I've changed the export code in repo-prs.js to return a constant in order to make it
     // easier to mock the function, getPRs, that's inside the ES module. Although this is not best
     // practice, it is useful for testing purposes, and in this case, seemed like the simplest
@@ -108,7 +107,7 @@ describe("PR Alerts", function() {
     // https://javascript.plainenglish.io/unit-testing-challenges-with-modulary-javascript-patterns
     // It was a huge help in understanding why I was having trouble testing the code and some
     // options for dealing with the challenges.
-
+    getPRsOriginal = repoPRs.getPRs;
     repoPRs.getPRs = jasmine.createSpy('getPRs').and.returnValue(
       Promise.resolve([
         {
@@ -140,7 +139,13 @@ describe("PR Alerts", function() {
         }
       ])
     );
+  });
 
+  afterEach(() => {
+    repoPRs.getPRs = getPRsOriginal;
+  });
+
+  it ('gets alerts from the PRs', async function() {
     const alerts = await getAlerts(owner, repo, octokit);
 
     expect(alerts.length).toBe(9);

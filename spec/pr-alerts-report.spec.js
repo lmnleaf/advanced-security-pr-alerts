@@ -4,6 +4,7 @@ import Moctokit from './support/moctokit.js';
 
 describe("Repo Alerts", function() {
   let octokit;
+  let getPRsOriginal;
   let owner = 'org';
   let repo = 'repo';
   let mockData = [
@@ -98,6 +99,7 @@ describe("Repo Alerts", function() {
 
   beforeEach(() => {
     octokit = new Moctokit(mockData);
+    getPRsOriginal = repoPRs.getPRs;
 
     // NOTE: Please see notes about why I've set up the exports and
     // mocks this way in the pr-alerts.spec.js file.
@@ -136,6 +138,10 @@ describe("Repo Alerts", function() {
     alertsReport.writeFile = jasmine.createSpy('writeFile').and.callFake((path, data, callback) => {
       callback(null); // Simulate successful write operation
     });
+  });
+
+  afterEach(() => {
+    repoPRs.getPRs = getPRsOriginal;
   });
 
   it ('creates a CSV of alerts', async function() {
