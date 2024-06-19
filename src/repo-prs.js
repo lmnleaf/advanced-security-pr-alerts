@@ -17,7 +17,7 @@ async function getPRs(owner, repo, octokit) {
       },
       (response, done) => {
         // stop on updated_at date
-        stopListingPRs = response.data.find((pr) => new Date(pr.updated_at) <= daysAgo);
+        let stopListingPRs = response.data.find((pr) => new Date(pr.updated_at) <= daysAgo);
         if (stopListingPRs) {
           done();
         }
@@ -49,4 +49,6 @@ function filteredPrs(prs, daysAgo) {
   );
 }
 
-module.exports = { getPRs }
+export const repoPRs = {
+  getPRs: getPRs
+}

@@ -1,4 +1,4 @@
-const repoPRs = require('./repo-prs.js');
+import { repoPRs } from './repo-prs.js';
 
 async function getAlerts(owner, repo, octokit) {
   let prs = await repoPRs.getPRs(owner, repo, octokit);
@@ -44,4 +44,4 @@ async function getAlerts(owner, repo, octokit) {
   return alerts;
 }
 
-module.exports = getAlerts;
+export default getAlerts;

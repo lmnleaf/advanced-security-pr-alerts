@@ -1,7 +1,6 @@
-const repoPRs = require('../src/repo-prs.js');
-const createReport = require('../src/pr-alerts-report.js');
-const fs = require('fs');
-const Moctokit = require('./support/moctokit.js');
+import { alertsReport } from '../src/pr-alerts-report.js';
+import { repoPRs } from '../src/repo-prs.js';
+import Moctokit from './support/moctokit.js';
 
 describe("Repo Alerts", function() {
   let octokit;
@@ -100,9 +99,11 @@ describe("Repo Alerts", function() {
   beforeEach(() => {
     octokit = new Moctokit(mockData);
 
-    spyOn(repoPRs, 'getPRs').and.returnValue(
+    // NOTE: Please see notes about why I've set up the exports and
+    // mocks this way in the pr-alerts.spec.js file.
+    repoPRs.getPRs = jasmine.createSpy('getPRs').and.returnValue(
       Promise.resolve([
-        { 
+        {
           repo: 'repo',
           number: 10,
           user: 'cool',
@@ -120,7 +121,7 @@ describe("Repo Alerts", function() {
           merged_at: null,
           updated_at: '2023-04-02T12:00:00Z'
         },
-        { 
+        {
           repo: 'repo',
           number: 8,
           user: 'yip',
@@ -129,22 +130,24 @@ describe("Repo Alerts", function() {
           merged_at: null,
           updated_at: '2023-04-02T12:00:00Z'
         }
-      ]) 
+      ])
     );
+
+    alertsReport.writeFile = jasmine.createSpy('writeFile').and.callFake((path, data, callback) => {
+      callback(null); // Simulate successful write operation
+    });
   });
 
   it ('creates a CSV of alerts', async function() {
-    spyOn(fs, 'writeFile').and.callFake((path, data, callback) => {
-      callback(null); // Simulate successful write operation
-    });
+    await alertsReport.createReport(owner, repo, octokit);
 
-    await createReport(owner, repo, octokit);
+    expect(repoPRs.getPRs).toHaveBeenCalled();
+    expect(alertsReport.writeFile).toHaveBeenCalled();
 
-    const args = fs.writeFile.calls.mostRecent().args;
+    const args = alertsReport.writeFile.calls.mostRecent().args;
     const filePath = args[0];
     const fileContent = args[1];
 
-    expect(fs.writeFile).toHaveBeenCalled();
     expect(filePath).toContain('temp/repo-pr-alerts-report-');
 
     const lines = fileContent.split('\n');
@@ -171,12 +174,10 @@ describe("Repo Alerts", function() {
   });
 
   it ('returns an array of alert numbers', async function() {
-    spyOn(fs, 'writeFile').and.returnValue(null);
+    const alertNumbers = await alertsReport.createReport(owner, repo, octokit);
 
-    const prAlertsReport = await createReport(owner, repo, octokit);
-
-    expect(prAlertsReport.length).toBe(9);
-    expect(prAlertsReport).toEqual([43, 42, 41, 43, 42, 41, 43, 42, 41]);
+    expect(alertNumbers.length).toBe(9);
+    expect(alertNumbers).toEqual([43, 42, 41, 43, 42, 41, 43, 42, 41]);
   });
 
   it('handles errors', async function() {
@@ -185,7 +186,7 @@ describe("Repo Alerts", function() {
     });
 
     try {
-      await createReport(owner, repo, octokit);
+      await alertsReport.createReport(owner, repo, octokit);
     } catch (error) {
       expect(error).toEqual(new Error('fetch error'));
     }

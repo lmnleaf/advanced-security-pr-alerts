@@ -1,5 +1,5 @@
-const repoPRs = require('../src/repo-prs.js');
-const Moctokit = require('./support/moctokit.js');
+import { repoPRs } from '../src/repo-prs.js';
+import Moctokit from './support/moctokit.js';
 
 describe("Repo PRs", function() {
   let octokit;

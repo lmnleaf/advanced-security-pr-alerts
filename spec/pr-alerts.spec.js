@@ -1,8 +1,8 @@
-const repoPRs = require('../src/repo-prs.js');
-const getAlerts = require('../src/pr-alerts.js');
-const Moctokit = require('./support/moctokit.js');
+import { repoPRs } from '../src/repo-prs.js';
+import getAlerts from '../src/pr-alerts.js';
+import Moctokit from './support/moctokit.js';
 
-describe("Repo Alerts", function() {
+describe("PR Alerts", function() {
   let octokit;
   let owner = 'org';
   let repo = 'repo';
@@ -100,8 +100,16 @@ describe("Repo Alerts", function() {
     octokit = new Moctokit(mockData);
   });
 
-  it ('gets alerts from the review comments by the bot', async function() {
-    spyOn(repoPRs, 'getPRs').and.returnValue(
+  it ('gets alerts from the repo for the PRs', async function() {
+    // NOTE: I've changed the export code in repo-prs.js to return a constant in order to make it
+    // easier to mock the function, getPRs, that's inside the ES module. Although this is not best
+    // practice, it is useful for testing purposes, and in this case, seemed like the simplest
+    // option without too many superflous code changes. I got the idea from this article:
+    // https://javascript.plainenglish.io/unit-testing-challenges-with-modulary-javascript-patterns
+    // It was a huge help in understanding why I was having trouble testing the code and some
+    // options for dealing with the challenges.
+
+    repoPRs.getPRs = jasmine.createSpy('getPRs').and.returnValue(
       Promise.resolve([
         {
           repo: 'repo',
@@ -130,7 +138,7 @@ describe("Repo Alerts", function() {
           merged_at: null,
           updated_at: '2023-04-02T12:00:00Z'
         }
-      ]) 
+      ])
     );
 
     const alerts = await getAlerts(owner, repo, octokit);

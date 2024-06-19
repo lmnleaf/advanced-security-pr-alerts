@@ -1,5 +1,5 @@
-const getAlerts = require('./pr-alerts.js');
-const fs = require('fs');
+import getAlerts from './pr-alerts.js';
+import * as fs from 'fs';
 
 async function createReport(owner, repo, octokit) {
   let alertNumbers = [];
@@ -66,7 +66,7 @@ async function createReport(owner, repo, octokit) {
       'pr_merged_at',
       'pr_updated_at'
     ]);
-  
+
     writeReport(csvRows);
   } catch (error) {
     throw error;
@@ -78,9 +78,17 @@ async function createReport(owner, repo, octokit) {
 function writeReport (csvRows) {
   let csvDate = new Date().toISOString().slice(0, 10);
 
-  fs.writeFile('temp/repo-pr-alerts-report-' + csvDate + '.csv', csvRows.join("\r\n"), (error) => {
+  // TO DO: update path
+  alertsReport.writeFile('temp/repo-pr-alerts-report-' + csvDate + '.csv', csvRows.join("\r\n"), (error) => {
     console.log(error || "report created successfully");
   });
 }
 
-module.exports = createReport
+function writeFile (path, data, callback) {
+  fs.writeFile(path, data, callback);
+}
+
+export const alertsReport = {
+  writeFile: writeFile,
+  createReport: createReport
+}
