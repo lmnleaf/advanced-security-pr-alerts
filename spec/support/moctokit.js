@@ -5,6 +5,9 @@ class Moctokit {
         list: this.listPRs,
         listReviewComments: this.listReviewComments
       },
+      repos: {
+        listForOrg: this.listForOrg,
+      },
       codeScanning: {
         listAlertsForRepo: this.listAlertsForRepo
       }

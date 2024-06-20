@@ -6,7 +6,7 @@ describe("Repo Alerts", function() {
   let octokit;
   let getPRsOriginal;
   let owner = 'org';
-  let repo = 'repo';
+  let repos = ['repo'];
   let mockData = [
     {
       number: 43,
@@ -115,7 +115,7 @@ describe("Repo Alerts", function() {
           updated_at: '2023-04-02T12:00:00Z'
         },
         {
-          repo: 'repo',
+          repo: 'repo1',
           number: 9,
           user: 'wow',
           state: 'open',
@@ -124,7 +124,7 @@ describe("Repo Alerts", function() {
           updated_at: '2023-04-02T12:00:00Z'
         },
         {
-          repo: 'repo',
+          repo: 'repo2',
           number: 8,
           user: 'yip',
           state: 'open',
@@ -145,7 +145,7 @@ describe("Repo Alerts", function() {
   });
 
   it ('creates a CSV of alerts', async function() {
-    await alertsReport.createReport(owner, repo, octokit);
+    await alertsReport.createReport(owner, repos, octokit);
 
     expect(repoPRs.getPRs).toHaveBeenCalled();
     expect(alertsReport.writeFile).toHaveBeenCalled();
@@ -175,15 +175,25 @@ describe("Repo Alerts", function() {
       '2024-05-01T12:00:00Z,' +
       ',,,,' +
       '2023-04-01T12:00:00Z,2023-04-02T12:00:00Z,' +
-      'repo,8,,open,,,2023-04-02T12:00:00Z'
+      'repo,10,cool,closed,false,2023-04-01T12:00:00Z,2023-04-02T12:00:00Z'
     );
   });
 
-  it ('returns an array of alert numbers', async function() {
-    const alertNumbers = await alertsReport.createReport(owner, repo, octokit);
+  it ('returns an alert info', async function() {
+    const alertNumbers = await alertsReport.createReport(owner, repos, octokit);
 
     expect(alertNumbers.length).toBe(9);
-    expect(alertNumbers).toEqual([43, 42, 41, 43, 42, 41, 43, 42, 41]);
+    expect(alertNumbers).toEqual([
+      { repo: 'repo', number: 43 },
+      { repo: 'repo', number: 42 },
+      { repo: 'repo', number: 41 },
+      { repo: 'repo1', number: 43 },
+      { repo: 'repo1', number: 42 },
+      { repo: 'repo1', number: 41 },
+      { repo: 'repo2', number: 43 },
+      { repo: 'repo2', number: 42 },
+      { repo: 'repo2', number: 41 }
+    ]);
   });
 
   it('handles errors', async function() {
@@ -192,7 +202,7 @@ describe("Repo Alerts", function() {
     });
 
     try {
-      await alertsReport.createReport(owner, repo, octokit);
+      await alertsReport.createReport(owner, repos, octokit);
     } catch (error) {
       expect(error).toEqual(new Error('fetch error'));
     }

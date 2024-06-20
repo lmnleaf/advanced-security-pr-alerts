@@ -1,13 +1,24 @@
 import getAlerts from './pr-alerts.js';
 import * as fs from 'fs';
 
-async function createReport(owner, repo, octokit) {
-  let alertNumbers = [];
+async function createReport(owner, repos, octokit) {
+  let alertInfo = [];
 
   try {
-    const alerts = await getAlerts(owner, repo, octokit);
+    const alerts = await getAlerts(owner, repos, octokit);
 
-    alertNumbers = alerts.map((alert) => alert.number);
+    if (alerts.length === 0) {
+      return;
+    }
+
+    alertInfo = alerts.map((alert) => {
+      let info = {
+        repo: alert.pr.repo,
+        number: alert.number
+      }
+
+      return info;
+    });
   
     const csvRows = alerts.map((alert) => [
       alert.number,
@@ -71,8 +82,8 @@ async function createReport(owner, repo, octokit) {
   } catch (error) {
     throw error;
   }
-  
-  return alertNumbers;
+
+  return alertInfo;
 }
 
 function writeReport (csvRows) {

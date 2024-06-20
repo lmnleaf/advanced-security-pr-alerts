@@ -68,7 +68,7 @@ describe("Repo PRs", function() {
       draft: false,
       merged_at: new Date(baseTime - (24 * 60 * 60 * 1000 * 37)).toISOString(),
       updated_at: new Date(baseTime - (24 * 60 * 60 * 1000 * 35)).toISOString()
-    }, // PR updated 35q days ago
+    }, // PR updated 35 days ago
     { 
       number: 2,
       user: { login: 'PRauthor3' }, 

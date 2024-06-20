@@ -1,12 +1,13 @@
 import { repoPRs } from '../src/repo-prs.js';
+import { orgRepos } from '../src/org-repos.js';
 import getAlerts from '../src/pr-alerts.js';
 import Moctokit from './support/moctokit.js';
 
 describe("PR Alerts", function() {
   let octokit;
   let getPRsOriginal;
+  let getOrgReposOriginal;
   let owner = 'org';
-  let repo = 'repo';
   let mockData = [
     {
       number: 43,
@@ -120,7 +121,7 @@ describe("PR Alerts", function() {
           updated_at: '2023-04-02T12:00:00Z'
         },
         {
-          repo: 'repo',
+          repo: 'repo1',
           number: 9,
           user: 'wow',
           state: 'open',
@@ -129,7 +130,7 @@ describe("PR Alerts", function() {
           updated_at: '2023-04-02T12:00:00Z'
         },
         {
-          repo: 'repo',
+          repo: 'repo2',
           number: 8,
           user: 'yip',
           state: 'open',
@@ -139,28 +140,72 @@ describe("PR Alerts", function() {
         }
       ])
     );
+
+    getOrgReposOriginal = orgRepos.getOrgRepos;
+    orgRepos.getOrgRepos = jasmine.createSpy('getOrgRepos').and.returnValue(
+      Promise.resolve([
+        {
+          name: 'repo',
+          type: 'private'
+        },
+        {
+          name: 'repo1',
+          type: 'public'
+        },
+        {
+          name: 'repo2',
+          type: 'internal'
+        }
+      ])
+    );
   });
 
   afterEach(() => {
+    // reset to original module function, so doesn't affect other tests
     repoPRs.getPRs = getPRsOriginal;
+    orgRepos.getOrgRepos = getOrgReposOriginal;
   });
 
-  it ('gets alerts from the PRs', async function() {
-    const alerts = await getAlerts(owner, repo, octokit);
+  it ('gets alerts from a list of PRs', async function() {
+    let repos = ['repo', 'repo1', 'repo2'];
 
-    expect(alerts.length).toBe(9);
-    expect(alerts[0].number).toBe(43);
-    expect(alerts[1].number).toBe(42);
-    expect(alerts[2].number).toBe(41);
+    const alerts = await getAlerts(owner, repos, octokit);
+
+    expect(repoPRs.getPRs).toHaveBeenCalledWith(owner, 'repo', octokit);
+
+    expect(alerts[0].number).toEqual(43);
+    expect(alerts[0].pr.repo).toEqual('repo');
+    expect(alerts[1].number).toEqual(42);
+    expect(alerts[8].number).toEqual(41);
+    expect(alerts[8].pr.repo).toEqual('repo2');
+    expect(alerts[9].number).toEqual(43);
+  });
+
+  it('gets alerts from all repos in an org when there are no repos specified', async function() {
+    let repos = [];
+
+    const alerts = await getAlerts(owner, repos, octokit);
+
+    expect(orgRepos.getOrgRepos).toHaveBeenCalled();18
+    expect(repoPRs.getPRs).toHaveBeenCalled();
+
+    expect(alerts[0].number).toEqual(43);
+    expect(alerts[0].pr.repo).toEqual('repo');
+    expect(alerts[1].number).toEqual(42);
+    expect(alerts[8].number).toEqual(41);
+    expect(alerts[8].pr.repo).toEqual('repo2');
+    expect(alerts[9].number).toEqual(43);
   });
 
   it('handles errors', async function() {
+    let repos = ['repo1', 'repo2'];
+
     spyOn(globalThis, 'fetch').and.callFake(function() {
       return Promise.reject(new Error('fetch error'));
     });
 
     try {
-      await getAlerts(owner, repo, octokit);
+      await getAlerts(owner, repos, octokit);
     } catch (error) {
       expect(error).toEqual(new Error('fetch error'));
     }
