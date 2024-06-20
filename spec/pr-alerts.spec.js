@@ -171,6 +171,7 @@ describe("PR Alerts", function() {
 
     const alerts = await getAlerts(owner, repos, octokit);
 
+    expect(octokit.paginate).toHaveBeenCalled();
     expect(repoPRs.getPRs).toHaveBeenCalledWith(owner, 'repo', octokit);
 
     expect(alerts[0].number).toEqual(43);
@@ -186,6 +187,7 @@ describe("PR Alerts", function() {
 
     const alerts = await getAlerts(owner, repos, octokit);
 
+    expect(octokit.paginate).toHaveBeenCalled();
     expect(orgRepos.getOrgRepos).toHaveBeenCalled();18
     expect(repoPRs.getPRs).toHaveBeenCalled();
 
@@ -197,17 +199,31 @@ describe("PR Alerts", function() {
     expect(alerts[9].number).toEqual(43);
   });
 
-  it('handles errors', async function() {
-    let repos = ['repo1', 'repo2'];
-
-    spyOn(globalThis, 'fetch').and.callFake(function() {
-      return Promise.reject(new Error('fetch error'));
-    });
+  it('continues to next PR if no analysis found', async function() {
+    let repos = ['repo', 'repo1'];
+    let caughtError = null;
+    let octokitTestError = new Moctokit([], true, 'no analysis found');
 
     try {
-      await getAlerts(owner, repos, octokit);
+      await getAlerts(owner, repos, octokitTestError);
     } catch (error) {
-      expect(error).toEqual(new Error('fetch error'));
+      caughtError = error;
     }
-  })
+
+    expect(caughtError).toBeNull();
+  });
+
+  it('handles errors', async function() {
+    let repos = ['repo1', 'repo2'];
+    let caughtError;
+    let octokitTestError = new Moctokit([], true);
+
+    try {
+      await getAlerts(owner, repos, octokitTestError);
+    } catch (error) {
+      caughtError = error;
+    }
+
+    expect(caughtError).toEqual(new Error('fetch error'));
+  });
 });

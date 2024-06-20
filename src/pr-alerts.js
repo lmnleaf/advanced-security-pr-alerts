@@ -37,7 +37,11 @@ async function getAlerts(owner, repos, octokit) {
         }
       );
     } catch (error) {
-      throw error;
+      if (error.message.includes('no analysis found')) {
+        continue;
+      } else {
+        throw error;
+      }
     }
 
     prAlerts = prAlerts.map((alert) => {
