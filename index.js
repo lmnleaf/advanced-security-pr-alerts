@@ -1,8 +1,8 @@
-const core = require('@actions/core');
-const github = require('@actions/github');
-const dotenv = require('dotenv');
-const getComments = require('./src/get-comments.js');
-const fs = require('fs');
+import * as github from '@actions/github';
+import * as core from '@actions/core';
+import * as dotenv from 'dotenv';
+import { alertsReport } from './src/pr-alerts-report.js';
+
 
 // const context = github.context;
 
@@ -13,10 +13,10 @@ async function main() {
     // const token = core.getInput('GITHUB_TOKEN');
     const octokit = new github.getOctokit(token);
     const owner = 'org';
-    const repo = 'repo';
+    const repos = ['repo'];
 
-    const comments = await getComments(owner, repo, octokit);
-
+    let report = await alertsReport.createReport(owner, repos, octokit);
+    console.log(report);
     // return core.notice(size);
   } catch (error) {
     console.log('EEK: ', error);
