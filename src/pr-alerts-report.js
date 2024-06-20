@@ -8,7 +8,7 @@ async function createReport(owner, repos, octokit) {
     const alerts = await getAlerts(owner, repos, octokit);
 
     if (alerts.length === 0) {
-      return;
+      return reportSummary('No PR alerts found.', repos, []);
     }
 
     alertInfo = alerts.map((alert) => {
@@ -83,7 +83,9 @@ async function createReport(owner, repos, octokit) {
     throw error;
   }
 
-  return alertInfo;
+  let message = alertInfo.length.toString() + ' PR alerts found.';
+ 
+  return reportSummary(message, repos, alertInfo);
 }
 
 function writeReport (csvRows) {
@@ -97,6 +99,17 @@ function writeReport (csvRows) {
 
 function writeFile (path, data, callback) {
   fs.writeFile(path, data, callback);
+}
+
+function reportSummary (message, repos, alertInfo) {
+  let reportSummary = {
+    message: message,
+    alerts: alertInfo,
+    allOrgReposRevied: repos.length === 0 ? true : false,
+    reposReviewed: repos.length > 0 ? repos : ['All Org Repos']
+  }
+
+  return reportSummary;
 }
 
 export const alertsReport = {

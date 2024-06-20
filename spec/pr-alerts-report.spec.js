@@ -180,20 +180,24 @@ describe("Alerts Report", function() {
   });
 
   it ('returns alert info', async function() {
-    const alertNumbers = await alertsReport.createReport(owner, repos, octokit);
+    const reportSummary= await alertsReport.createReport(owner, repos, octokit);
 
-    expect(alertNumbers.length).toBe(9);
-    expect(alertNumbers).toEqual([
-      { repo: 'repo', number: 43 },
-      { repo: 'repo', number: 42 },
-      { repo: 'repo', number: 41 },
-      { repo: 'repo1', number: 43 },
-      { repo: 'repo1', number: 42 },
-      { repo: 'repo1', number: 41 },
-      { repo: 'repo2', number: 43 },
-      { repo: 'repo2', number: 42 },
-      { repo: 'repo2', number: 41 }
-    ]);
+    expect(reportSummary).toEqual({
+      message: '9 PR alerts found.',
+      alerts: [
+        { repo: 'repo', number: 43 },
+        { repo: 'repo', number: 42 },
+        { repo: 'repo', number: 41 },
+        { repo: 'repo1', number: 43 },
+        { repo: 'repo1', number: 42 },
+        { repo: 'repo1', number: 41 },
+        { repo: 'repo2', number: 43 },
+        { repo: 'repo2', number: 42 },
+        { repo: 'repo2', number: 41 }
+      ],
+      allOrgReposRevied: false,
+      reposReviewed: [ 'repo' ]
+    });
   });
 
   it('handles errors', async function() {
