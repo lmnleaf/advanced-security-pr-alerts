@@ -9,7 +9,10 @@ async function getOrgRepos(org, octokit) {
         per_page: 100
       },
       (response, done) => {
-        repoNames.push(...response.data.map((repo) => repo.name));
+        let advancedSecurityRepos = response.data.filter(
+          (repo) => repo.security_and_analysis.advanced_security.status === 'enabled'
+        );
+        repoNames.push(...advancedSecurityRepos.map((repo) => repo.name));
       }
   )} catch (error) {
     throw error;
