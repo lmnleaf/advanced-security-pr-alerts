@@ -102,14 +102,16 @@ describe("Repo PRs", function() {
   });
 
   it('handles errors', async function() {
-    spyOn(globalThis, 'fetch').and.callFake(function() {
-      return Promise.reject(new Error('fetch error'));
-    });
+    let repos = ['repo1', 'repo2'];
+    let caughtError;
+    let octokitTestError = new Moctokit([], true);
 
     try {
-      await repoPRs.getPRs(owner, repo, octokit);
+      await repoPRs.getPRs(owner, repos, octokitTestError);
     } catch (error) {
-      expect(error).toEqual(new Error('fetch error'));
+      caughtError = error;
     }
-  })
+
+    expect(caughtError).toEqual(new Error('fetch error'));
+  });
 });

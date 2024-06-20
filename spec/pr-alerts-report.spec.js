@@ -2,7 +2,7 @@ import { alertsReport } from '../src/pr-alerts-report.js';
 import { repoPRs } from '../src/repo-prs.js';
 import Moctokit from './support/moctokit.js';
 
-describe("Repo Alerts", function() {
+describe("Alerts Report", function() {
   let octokit;
   let getPRsOriginal;
   let owner = 'org';
@@ -179,7 +179,7 @@ describe("Repo Alerts", function() {
     );
   });
 
-  it ('returns an alert info', async function() {
+  it ('returns alert info', async function() {
     const alertNumbers = await alertsReport.createReport(owner, repos, octokit);
 
     expect(alertNumbers.length).toBe(9);
@@ -197,14 +197,16 @@ describe("Repo Alerts", function() {
   });
 
   it('handles errors', async function() {
-    spyOn(globalThis, 'fetch').and.callFake(function() {
-      return Promise.reject(new Error('fetch error'));
-    });
+    let repos = ['repo1', 'repo2'];
+    let caughtError;
+    let octokitTestError = new Moctokit([], true);
 
     try {
-      await alertsReport.createReport(owner, repos, octokit);
+      await alertsReport.createReport(owner, repos, octokitTestError);
     } catch (error) {
-      expect(error).toEqual(new Error('fetch error'));
+      caughtError = error;
     }
-  })      
+
+    expect(caughtError).toEqual(new Error('fetch error'));
+  });
 });

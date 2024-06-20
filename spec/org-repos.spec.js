@@ -40,4 +40,17 @@ describe("Org Repos", function() {
 
     expect(repos).toEqual(['repo1', 'repo2']);
   });
+
+  it('handles errors', async function() {
+    let caughtError;
+    let octokitTestError = new Moctokit([], true);
+
+    try {
+      await orgRepos.getOrgRepos(owner, octokitTestError);
+    } catch (error) {
+      caughtError = error;
+    }
+
+    expect(caughtError).toEqual(new Error('fetch error'));
+  });
 });
