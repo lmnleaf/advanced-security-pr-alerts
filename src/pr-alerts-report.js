@@ -1,11 +1,13 @@
-import getAlerts from './pr-alerts.js';
+import { prAlerts } from './pr-alerts.js';
 import * as fs from 'fs';
 
-async function createReport(owner, repos, octokit) {
+async function createReport(reposInput, totalDaysInput, context, octokit) {
   let alertInfo = [];
 
+  const { owner, repos, totalDays } = processInput(reposInput, totalDaysInput, context);
+
   try {
-    const alerts = await getAlerts(owner, repos, octokit);
+    const alerts = await prAlerts.getAlerts(owner, repos, totalDays, octokit);
 
     if (alerts.length === 0) {
       return reportSummary('No PR alerts found.', repos, []);
@@ -105,11 +107,30 @@ function reportSummary (message, repos, alertInfo) {
   let reportSummary = {
     message: message,
     alerts: alertInfo,
-    allOrgReposRevied: repos.length === 0 ? true : false,
+    allOrgReposReviewed: repos.length === 0 ? true : false,
     reposReviewed: repos.length > 0 ? repos : ['All Org Repos']
   }
 
   return reportSummary;
+}
+
+function processInput (repos, totalDays, context) {
+  let input = {
+    owner: context.repo.owner,
+    repos: [context.repo.repo],
+    totalDays: 30
+  }
+
+  if (repos != null && repos.length > 0) {
+    input.repos = repos.split(',');
+  }
+
+  let days = parseInt(totalDays);
+  if (days != NaN && days > 0 && days < 101) {
+    input.totalDays = days;
+  }
+
+  return input;
 }
 
 export const alertsReport = {

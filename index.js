@@ -4,23 +4,19 @@ import * as dotenv from 'dotenv';
 import { alertsReport } from './src/pr-alerts-report.js';
 
 
-// const context = github.context;
+const context = github.context;
 
 async function main() {
   try {
-    dotenv.config();
-    const token = process.env.GH_PAT;
-    // const token = core.getInput('GITHUB_TOKEN');
+    const token = core.getInput('TOKEN');
     const octokit = new github.getOctokit(token);
-    const owner = 'org';
-    const repos = ['repo'];
+    const total_days = core.getInput('days');
+    const repos = core.getInput('repos')
 
-    let report = await alertsReport.createReport(owner, repos, octokit);
-    console.log(report);
-    // return core.notice(size);
+    let reportSummary = await alertsReport.createReport(repos, total_days, context, octokit);
+    return core.notice(reportSummary);
   } catch (error) {
-    console.log('EEK: ', error);
-    // core.setFailed(error.message);
+    core.setFailed(error.message);
   }
 }
 

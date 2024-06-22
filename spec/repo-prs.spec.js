@@ -92,10 +92,20 @@ describe("Repo PRs", function() {
   });
 
   it('gets PRs for the past 30 days', async function () {
-    const prs = await repoPRs.getPRs(owner, repo, octokit);
+    const prs = await repoPRs.getPRs(owner, repo, 30, octokit);
 
     expect(octokit.paginate).toHaveBeenCalled();
-    expect(prs.length).toBe(7); // Expecting 7 comments that are within the last 30 days
+    expect(prs.length).toBe(7);
+    for (let i = 0; i < prs.length; i++) {
+      expect(new Date(prs[i].updated_at) <= new Date()).toBeTrue();
+    }
+  });
+
+  it('gets PR for the past 15 days', async function () {
+    const prs = await repoPRs.getPRs(owner, repo, 15, octokit);
+
+    expect(octokit.paginate).toHaveBeenCalled();
+    expect(prs.length).toBe(2);
     for (let i = 0; i < prs.length; i++) {
       expect(new Date(prs[i].updated_at) <= new Date()).toBeTrue();
     }
@@ -107,7 +117,7 @@ describe("Repo PRs", function() {
     let octokitTestError = new Moctokit([], true);
 
     try {
-      await repoPRs.getPRs(owner, repos, octokitTestError);
+      await repoPRs.getPRs(owner, repos, 30, octokitTestError);
     } catch (error) {
       caughtError = error;
     }

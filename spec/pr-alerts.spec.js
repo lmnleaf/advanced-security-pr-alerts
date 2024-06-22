@@ -1,6 +1,6 @@
 import { repoPRs } from '../src/repo-prs.js';
 import { orgRepos } from '../src/org-repos.js';
-import getAlerts from '../src/pr-alerts.js';
+import { prAlerts } from '../src/pr-alerts.js';
 import Moctokit from './support/moctokit.js';
 
 describe("PR Alerts", function() {
@@ -8,6 +8,7 @@ describe("PR Alerts", function() {
   let getPRsOriginal;
   let getOrgReposOriginal;
   let owner = 'org';
+  let totalDays = 30;
   let mockData = [
     {
       number: 43,
@@ -169,10 +170,10 @@ describe("PR Alerts", function() {
   it ('gets alerts from a list of PRs', async function() {
     let repos = ['repo', 'repo1', 'repo2'];
 
-    const alerts = await getAlerts(owner, repos, octokit);
+    const alerts = await prAlerts.getAlerts(owner, repos, totalDays, octokit);
 
     expect(octokit.paginate).toHaveBeenCalled();
-    expect(repoPRs.getPRs).toHaveBeenCalledWith(owner, 'repo', octokit);
+    expect(repoPRs.getPRs).toHaveBeenCalledWith(owner, 'repo', 30, octokit);
 
     expect(alerts[0].number).toEqual(43);
     expect(alerts[0].pr.repo).toEqual('repo');
@@ -185,7 +186,7 @@ describe("PR Alerts", function() {
   it('gets alerts from all repos in an org when there are no repos specified', async function() {
     let repos = [];
 
-    const alerts = await getAlerts(owner, repos, octokit);
+    const alerts = await prAlerts.getAlerts(owner, repos, totalDays, octokit);
 
     expect(octokit.paginate).toHaveBeenCalled();
     expect(orgRepos.getOrgRepos).toHaveBeenCalled();18
@@ -205,7 +206,7 @@ describe("PR Alerts", function() {
     let octokitTestError = new Moctokit([], true, 'no analysis found');
 
     try {
-      await getAlerts(owner, repos, octokitTestError);
+      await prAlerts.getAlerts(owner, repos, totalDays, octokitTestError);
     } catch (error) {
       caughtError = error;
     }
@@ -219,7 +220,7 @@ describe("PR Alerts", function() {
     let octokitTestError = new Moctokit([], true);
 
     try {
-      await getAlerts(owner, repos, octokitTestError);
+      await prAlerts.getAlerts(owner, repos, totalDays, octokitTestError);
     } catch (error) {
       caughtError = error;
     }

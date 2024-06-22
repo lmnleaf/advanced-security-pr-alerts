@@ -1,12 +1,16 @@
 import { alertsReport } from '../src/pr-alerts-report.js';
 import { repoPRs } from '../src/repo-prs.js';
+import { prAlerts } from '../src/pr-alerts.js';
 import Moctokit from './support/moctokit.js';
 
 describe("Alerts Report", function() {
   let octokit;
   let getPRsOriginal;
+  let getAlertsOriginal;
   let owner = 'org';
-  let repos = ['repo'];
+  let repos = 'repo';
+  let days = 30;
+  let context = { repo: { owner: 'org', repo: 'repo' } };
   let mockData = [
     {
       number: 43,
@@ -99,10 +103,10 @@ describe("Alerts Report", function() {
 
   beforeEach(() => {
     octokit = new Moctokit(mockData);
-    getPRsOriginal = repoPRs.getPRs;
 
     // NOTE: Please see notes about why I've set up the exports and
     // mocks this way in the pr-alerts.spec.js file.
+    getPRsOriginal = repoPRs.getPRs;
     repoPRs.getPRs = jasmine.createSpy('getPRs').and.returnValue(
       Promise.resolve([
         {
@@ -141,13 +145,15 @@ describe("Alerts Report", function() {
   });
 
   afterEach(() => {
+    // reset to original module function, so doesn't affect other tests
     repoPRs.getPRs = getPRsOriginal;
+    repoPRs.getAlerts = getAlertsOriginal;
   });
 
-  it ('creates a CSV of alerts', async function() {
-    await alertsReport.createReport(owner, repos, octokit);
+ it ('creates a CSV of alerts', async function() {
+    await alertsReport.createReport(repos, days, context, octokit);
 
-    expect(repoPRs.getPRs).toHaveBeenCalled();
+    expect(repoPRs.getPRs).toHaveBeenCalledWith(owner, repos, days, octokit);
     expect(alertsReport.writeFile).toHaveBeenCalled();
 
     const args = alertsReport.writeFile.calls.mostRecent().args;
@@ -179,8 +185,8 @@ describe("Alerts Report", function() {
     );
   });
 
-  it ('returns alert info', async function() {
-    const reportSummary= await alertsReport.createReport(owner, repos, octokit);
+  it ('returns a report summary', async function() {
+    const reportSummary= await alertsReport.createReport(repos, days, context, octokit);
 
     expect(reportSummary).toEqual({
       message: '9 PR alerts found.',
@@ -195,18 +201,36 @@ describe("Alerts Report", function() {
         { repo: 'repo2', number: 42 },
         { repo: 'repo2', number: 41 }
       ],
-      allOrgReposRevied: false,
+      allOrgReposReviewed: false,
       reposReviewed: [ 'repo' ]
     });
   });
 
+  it('processes input when no repos and no days are provided', async function() {
+    spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
+   await alertsReport.createReport(null, null, context, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
+  });
+
+  it('processes input when repos and days are empty strings', async function() {
+    spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
+    await alertsReport.createReport('', '', context, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
+  });
+
+  it('processes input when repos and days are provided', async function() {
+    spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
+    await alertsReport.createReport('woot,cool', 7, context, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', ['woot', 'cool'], 7, octokit);
+  });
+
   it('handles errors', async function() {
-    let repos = ['repo1', 'repo2'];
+    let repos = 'repo1,repo2';
     let caughtError;
     let octokitTestError = new Moctokit([], true);
 
     try {
-      await alertsReport.createReport(owner, repos, octokitTestError);
+      await alertsReport.createReport(repos, null, context, octokitTestError);
     } catch (error) {
       caughtError = error;
     }

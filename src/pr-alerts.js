@@ -1,7 +1,7 @@
 import { repoPRs } from './repo-prs.js';
 import { orgRepos } from './org-repos.js';
 
-async function getAlerts(owner, repos, octokit) {
+async function getAlerts(owner, repos, totalDays, octokit) {
   let reposList = [];
 
   if (repos.length === 0) {
@@ -13,7 +13,7 @@ async function getAlerts(owner, repos, octokit) {
   let prs = [];
 
   for (const repo of reposList) {
-    let prList = await repoPRs.getPRs(owner, repo, octokit);
+    let prList = await repoPRs.getPRs(owner, repo, totalDays, octokit);
     prs = prs.concat(prList);
   }
 
@@ -64,4 +64,6 @@ async function getAlerts(owner, repos, octokit) {
   return alerts;
 }
 
-export default getAlerts;
+export const prAlerts = {
+  getAlerts: getAlerts
+}
