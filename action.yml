@@ -9,7 +9,7 @@ inputs:
   total_days:
     description: 'Integer - fetches PRs for the past total_days. For example, if total_days is set `7`,
       the action will get code scanning alerts on PRs that have been updated in the past seven days.
-      Minimum is 1 day and max is 100 days. Defaults to `30`.'
+      Minimum is 1 day and max is 365 days. Defaults to `30`.'
     required: false
   repos:
     description: 'Comma-separated list of repository names from which PR code scanning alerts should be

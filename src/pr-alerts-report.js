@@ -126,7 +126,7 @@ function processInput (repos, totalDays, context) {
   }
 
   let days = parseInt(totalDays);
-  if (days != NaN && days > 0 && days < 101) {
+  if (days != NaN && days > 0 && days <= 365) {
     input.totalDays = days;
   }
 

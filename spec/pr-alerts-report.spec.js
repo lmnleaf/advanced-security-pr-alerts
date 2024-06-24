@@ -206,13 +206,13 @@ describe("Alerts Report", function() {
     });
   });
 
-  it('processes input when no repos and no days are provided', async function() {
+  it('processes input when no repos and no days are provided (defaults to current repo and 30 days)', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
    await alertsReport.createReport(null, null, context, octokit);
     expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
   });
 
-  it('processes input when repos and days are empty strings', async function() {
+  it('processes input when repos and days are empty strings (defaults to current repo and 30 days)', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
     await alertsReport.createReport('', '', context, octokit);
     expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
@@ -222,6 +222,18 @@ describe("Alerts Report", function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
     await alertsReport.createReport('woot,cool', 7, context, octokit);
     expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', ['woot', 'cool'], 7, octokit);
+  });
+
+  it('processes input when days is set to greater than 365 (defaults to 30 days)', async function() {
+    spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
+    await alertsReport.createReport(null, 500n, context, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
+  });
+
+  it('processes input when days is set to fewer than 1 (defaults to 30 days)', async function() {
+    spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
+    await alertsReport.createReport(null, 0, context, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
   });
 
   it('processes input when repos is set to `all`', async function() {
