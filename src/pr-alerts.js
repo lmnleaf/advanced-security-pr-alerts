@@ -1,7 +1,21 @@
-const repoPRs = require('./repo-prs.js');
+import { repoPRs } from './repo-prs.js';
+import { orgRepos } from './org-repos.js';
 
-async function getAlerts(owner, repo, octokit) {
-  let prs = await repoPRs.getPRs(owner, repo, octokit);
+async function getAlerts(owner, repos, totalDays, octokit) {
+  let reposList = [];
+
+  if (repos.length === 1 && repos[0] === 'all') {
+    reposList = await orgRepos.getOrgRepos(owner, octokit);
+  } else {
+    reposList = repos;
+  }
+
+  let prs = [];
+
+  for (const repo of reposList) {
+    let prList = await repoPRs.getPRs(owner, repo, totalDays, octokit);
+    prs = prs.concat(prList);
+  }
 
   let alerts = [];
 
@@ -13,7 +27,7 @@ async function getAlerts(owner, repo, octokit) {
         octokit.rest.codeScanning.listAlertsForRepo,
         {
           owner,
-          repo,
+          repo: pr.repo,
           ref: `refs/pull/${pr.number}/head`,
           // per_page should eventually be 100
           per_page: 5,
@@ -21,27 +35,35 @@ async function getAlerts(owner, repo, octokit) {
         (response, done) => {
           prAlerts.push(...response.data);
         }
-    )} catch (error) {
-      throw error;
+      );
+    } catch (error) {
+      if (error.message.includes('no analysis found')) {
+        continue;
+      } else {
+        throw error;
+      }
     }
 
-    let prAlertsWithAlertInfo = prAlerts.map((alert) => {
-      alert.pr = {
+    prAlerts = prAlerts.map((alert) => {
+      let newAlert = {...alert, pr: {
         repo: pr.repo,
         number: pr.number,
-        user: pr.user.login,
+        user: pr.user,
         state: pr.state,
+        draft: pr.draft,
         merged_at: pr.merged_at,
         updated_at: pr.updated_at
-      };
+      }};
 
-      return alert;
+      return newAlert;
     })
 
-    alerts = alerts.concat(prAlertsWithAlertInfo);
+    alerts = alerts.concat(prAlerts);
   }
 
   return alerts;
 }
 
-module.exports = getAlerts;
+export const prAlerts = {
+  getAlerts: getAlerts
+}

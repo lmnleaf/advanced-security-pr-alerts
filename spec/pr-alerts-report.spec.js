@@ -1,12 +1,16 @@
-const repoPRs = require('../src/repo-prs.js');
-const createReport = require('../src/pr-alerts-report.js');
-const fs = require('fs');
-const Moctokit = require('./support/moctokit.js');
+import { alertsReport } from '../src/pr-alerts-report.js';
+import { repoPRs } from '../src/repo-prs.js';
+import { prAlerts } from '../src/pr-alerts.js';
+import Moctokit from './support/moctokit.js';
 
-describe("Repo Alerts", function() {
+describe("Alerts Report", function() {
   let octokit;
+  let getPRsOriginal;
+  let getAlertsOriginal;
   let owner = 'org';
-  let repo = 'repo';
+  let repos = 'repo';
+  let days = 30;
+  let context = { repo: { owner: 'org', repo: 'repo' } };
   let mockData = [
     {
       number: 43,
@@ -100,9 +104,12 @@ describe("Repo Alerts", function() {
   beforeEach(() => {
     octokit = new Moctokit(mockData);
 
-    spyOn(repoPRs, 'getPRs').and.returnValue(
+    // NOTE: Please see notes about why I've set up the exports and
+    // mocks this way in the pr-alerts.spec.js file.
+    getPRsOriginal = repoPRs.getPRs;
+    repoPRs.getPRs = jasmine.createSpy('getPRs').and.returnValue(
       Promise.resolve([
-        { 
+        {
           repo: 'repo',
           number: 10,
           user: 'cool',
@@ -112,7 +119,7 @@ describe("Repo Alerts", function() {
           updated_at: '2023-04-02T12:00:00Z'
         },
         {
-          repo: 'repo',
+          repo: 'repo1',
           number: 9,
           user: 'wow',
           state: 'open',
@@ -120,8 +127,8 @@ describe("Repo Alerts", function() {
           merged_at: null,
           updated_at: '2023-04-02T12:00:00Z'
         },
-        { 
-          repo: 'repo',
+        {
+          repo: 'repo2',
           number: 8,
           user: 'yip',
           state: 'open',
@@ -129,22 +136,30 @@ describe("Repo Alerts", function() {
           merged_at: null,
           updated_at: '2023-04-02T12:00:00Z'
         }
-      ]) 
+      ])
     );
-  });
 
-  it ('creates a CSV of alerts', async function() {
-    spyOn(fs, 'writeFile').and.callFake((path, data, callback) => {
+    alertsReport.writeFile = jasmine.createSpy('writeFile').and.callFake((path, data, callback) => {
       callback(null); // Simulate successful write operation
     });
+  });
 
-    await createReport(owner, repo, octokit);
+  afterEach(() => {
+    // reset to original module function, so doesn't affect other tests
+    repoPRs.getPRs = getPRsOriginal;
+    repoPRs.getAlerts = getAlertsOriginal;
+  });
 
-    const args = fs.writeFile.calls.mostRecent().args;
+ it ('creates a CSV of alerts', async function() {
+    await alertsReport.createReport(repos, days, context, octokit);
+
+    expect(repoPRs.getPRs).toHaveBeenCalledWith(owner, repos, days, octokit);
+    expect(alertsReport.writeFile).toHaveBeenCalled();
+
+    const args = alertsReport.writeFile.calls.mostRecent().args;
     const filePath = args[0];
     const fileContent = args[1];
 
-    expect(fs.writeFile).toHaveBeenCalled();
     expect(filePath).toContain('temp/repo-pr-alerts-report-');
 
     const lines = fileContent.split('\n');
@@ -166,28 +181,66 @@ describe("Repo Alerts", function() {
       '2024-05-01T12:00:00Z,' +
       ',,,,' +
       '2023-04-01T12:00:00Z,2023-04-02T12:00:00Z,' +
-      'repo,8,,open,,,2023-04-02T12:00:00Z'
+      'repo,10,cool,closed,false,2023-04-01T12:00:00Z,2023-04-02T12:00:00Z'
     );
   });
 
-  it ('returns an array of alert numbers', async function() {
-    spyOn(fs, 'writeFile').and.returnValue(null);
+  it ('returns a report summary', async function() {
+    const reportSummary= await alertsReport.createReport(repos, days, context, octokit);
 
-    const prAlertsReport = await createReport(owner, repo, octokit);
+    expect(reportSummary).toEqual({
+      message: '9 PR alerts found.',
+      alerts: [
+        { repo: 'repo', number: 43 },
+        { repo: 'repo', number: 42 },
+        { repo: 'repo', number: 41 },
+        { repo: 'repo1', number: 43 },
+        { repo: 'repo1', number: 42 },
+        { repo: 'repo1', number: 41 },
+        { repo: 'repo2', number: 43 },
+        { repo: 'repo2', number: 42 },
+        { repo: 'repo2', number: 41 }
+      ],
+      allOrgReposReviewed: false,
+      reposReviewed: [ 'repo' ]
+    });
+  });
 
-    expect(prAlertsReport.length).toBe(9);
-    expect(prAlertsReport).toEqual([43, 42, 41, 43, 42, 41, 43, 42, 41]);
+  it('processes input when no repos and no days are provided', async function() {
+    spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
+   await alertsReport.createReport(null, null, context, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
+  });
+
+  it('processes input when repos and days are empty strings', async function() {
+    spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
+    await alertsReport.createReport('', '', context, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
+  });
+
+  it('processes input when repos and days are provided', async function() {
+    spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
+    await alertsReport.createReport('woot,cool', 7, context, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', ['woot', 'cool'], 7, octokit);
+  });
+
+  it('processes input when repos is set to `all`', async function() {
+    spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
+    await alertsReport.createReport('all', 7, context, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', ['all'], 7, octokit);
   });
 
   it('handles errors', async function() {
-    spyOn(globalThis, 'fetch').and.callFake(function() {
-      return Promise.reject(new Error('fetch error'));
-    });
+    let repos = 'repo1,repo2';
+    let caughtError;
+    let octokitTestError = new Moctokit([], true);
 
     try {
-      await createReport(owner, repo, octokit);
+      await alertsReport.createReport(repos, null, context, octokitTestError);
     } catch (error) {
-      expect(error).toEqual(new Error('fetch error'));
+      caughtError = error;
     }
-  })      
+
+    expect(caughtError).toEqual(new Error('fetch error'));
+  });
 });

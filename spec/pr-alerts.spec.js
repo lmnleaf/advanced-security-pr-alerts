@@ -1,11 +1,14 @@
-const repoPRs = require('../src/repo-prs.js');
-const getAlerts = require('../src/pr-alerts.js');
-const Moctokit = require('./support/moctokit.js');
+import { repoPRs } from '../src/repo-prs.js';
+import { orgRepos } from '../src/org-repos.js';
+import { prAlerts } from '../src/pr-alerts.js';
+import Moctokit from './support/moctokit.js';
 
-describe("Repo Alerts", function() {
+describe("PR Alerts", function() {
   let octokit;
+  let getPRsOriginal;
+  let getOrgReposOriginal;
   let owner = 'org';
-  let repo = 'repo';
+  let totalDays = 30;
   let mockData = [
     {
       number: 43,
@@ -98,10 +101,16 @@ describe("Repo Alerts", function() {
 
   beforeEach(() => {
     octokit = new Moctokit(mockData);
-  });
 
-  it ('gets alerts from the review comments by the bot', async function() {
-    spyOn(repoPRs, 'getPRs').and.returnValue(
+    // NOTE: I've changed the export code in repo-prs.js to return a constant in order to make it
+    // easier to mock the function, getPRs, that's inside the ES module. Although this is not best
+    // practice, it is useful for testing purposes, and in this case, seemed like the simplest
+    // option without too many superflous code changes. I got the idea from this article:
+    // https://javascript.plainenglish.io/unit-testing-challenges-with-modulary-javascript-patterns
+    // It was a huge help in understanding why I was having trouble testing the code and some
+    // options for dealing with the challenges.
+    getPRsOriginal = repoPRs.getPRs;
+    repoPRs.getPRs = jasmine.createSpy('getPRs').and.returnValue(
       Promise.resolve([
         {
           repo: 'repo',
@@ -113,7 +122,7 @@ describe("Repo Alerts", function() {
           updated_at: '2023-04-02T12:00:00Z'
         },
         {
-          repo: 'repo',
+          repo: 'repo1',
           number: 9,
           user: 'wow',
           state: 'open',
@@ -122,7 +131,7 @@ describe("Repo Alerts", function() {
           updated_at: '2023-04-02T12:00:00Z'
         },
         {
-          repo: 'repo',
+          repo: 'repo2',
           number: 8,
           user: 'yip',
           state: 'open',
@@ -130,26 +139,92 @@ describe("Repo Alerts", function() {
           merged_at: null,
           updated_at: '2023-04-02T12:00:00Z'
         }
-      ]) 
+      ])
     );
 
-    const alerts = await getAlerts(owner, repo, octokit);
+    getOrgReposOriginal = orgRepos.getOrgRepos;
+    orgRepos.getOrgRepos = jasmine.createSpy('getOrgRepos').and.returnValue(
+      Promise.resolve([
+        {
+          name: 'repo',
+          type: 'private'
+        },
+        {
+          name: 'repo1',
+          type: 'public'
+        },
+        {
+          name: 'repo2',
+          type: 'internal'
+        }
+      ])
+    );
+  });
 
-    expect(alerts.length).toBe(9);
-    expect(alerts[0].number).toBe(43);
-    expect(alerts[1].number).toBe(42);
-    expect(alerts[2].number).toBe(41);
+  afterEach(() => {
+    // reset to original module function, so doesn't affect other tests
+    repoPRs.getPRs = getPRsOriginal;
+    orgRepos.getOrgRepos = getOrgReposOriginal;
+  });
+
+  it ('gets alerts from a list of PRs', async function() {
+    let repos = ['repo', 'repo1', 'repo2'];
+
+    const alerts = await prAlerts.getAlerts(owner, repos, totalDays, octokit);
+
+    expect(octokit.paginate).toHaveBeenCalled();
+    expect(repoPRs.getPRs).toHaveBeenCalledWith(owner, 'repo', 30, octokit);
+
+    expect(alerts[0].number).toEqual(43);
+    expect(alerts[0].pr.repo).toEqual('repo');
+    expect(alerts[1].number).toEqual(42);
+    expect(alerts[8].number).toEqual(41);
+    expect(alerts[8].pr.repo).toEqual('repo2');
+    expect(alerts[9].number).toEqual(43);
+  });
+
+  it('gets alerts from all repos in an org when repos is set to `all`n', async function() {
+    let repos = [];
+
+    const alerts = await prAlerts.getAlerts(owner, ['all'], totalDays, octokit);
+
+    expect(octokit.paginate).toHaveBeenCalled();
+    expect(orgRepos.getOrgRepos).toHaveBeenCalled();18
+    expect(repoPRs.getPRs).toHaveBeenCalled();
+
+    expect(alerts[0].number).toEqual(43);
+    expect(alerts[0].pr.repo).toEqual('repo');
+    expect(alerts[1].number).toEqual(42);
+    expect(alerts[8].number).toEqual(41);
+    expect(alerts[8].pr.repo).toEqual('repo2');
+    expect(alerts[9].number).toEqual(43);
+  });
+
+  it('continues to next PR if no analysis found', async function() {
+    let repos = ['repo', 'repo1'];
+    let caughtError = null;
+    let octokitTestError = new Moctokit([], true, 'no analysis found');
+
+    try {
+      await prAlerts.getAlerts(owner, repos, totalDays, octokitTestError);
+    } catch (error) {
+      caughtError = error;
+    }
+
+    expect(caughtError).toBeNull();
   });
 
   it('handles errors', async function() {
-    spyOn(globalThis, 'fetch').and.callFake(function() {
-      return Promise.reject(new Error('fetch error'));
-    });
+    let repos = ['repo1', 'repo2'];
+    let caughtError;
+    let octokitTestError = new Moctokit([], true);
 
     try {
-      await getAlerts(owner, repo, octokit);
+      await prAlerts.getAlerts(owner, repos, totalDays, octokitTestError);
     } catch (error) {
-      expect(error).toEqual(new Error('fetch error'));
+      caughtError = error;
     }
-  })
+
+    expect(caughtError).toEqual(new Error('fetch error'));
+  });
 });

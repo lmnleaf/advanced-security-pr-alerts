@@ -1,9 +1,9 @@
-async function getPRs(owner, repo, octokit) {
+async function getPRs(owner, repo, totalDays, octokit) {
   let prs = [];
   const daysAgo = new Date();
 
   // make number of days an optional parameter
-  daysAgo.setDate(new Date().getDate() - 30);
+  daysAgo.setDate(new Date().getDate() - totalDays);
 
   try {
     await octokit.paginate(
@@ -17,7 +17,7 @@ async function getPRs(owner, repo, octokit) {
       },
       (response, done) => {
         // stop on updated_at date
-        stopListingPRs = response.data.find((pr) => new Date(pr.updated_at) <= daysAgo);
+        let stopListingPRs = response.data.find((pr) => new Date(pr.updated_at) <= daysAgo);
         if (stopListingPRs) {
           done();
         }
@@ -49,4 +49,6 @@ function filteredPrs(prs, daysAgo) {
   );
 }
 
-module.exports = { getPRs }
+export const repoPRs = {
+  getPRs: getPRs
+}

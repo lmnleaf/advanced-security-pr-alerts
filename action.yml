@@ -1,0 +1,23 @@
+name: 'Advanced Security PR Alerts'
+description: 'Gets code scanning alerts from PRs.'
+
+inputs:
+  TOKEN:
+    description: 'GitHub Token or Personal Access Token  - must use PAT to access alerts for repos other
+      than the repo where the action is used.'
+    required: true
+  total_days:
+    description: 'Integer - fetches PRs for the past total_days. For example, if total_days is set `7`,
+      the action will get code scanning alerts on PRs that have been updated in the past seven days.
+      Minimum is 1 day and max is 100 days. Defaults to `30`.'
+    required: false
+  repos:
+    description: 'Comma-separated list of repository names from which PR code scanning alerts should be
+      fetched. For example, `best-app,cool-app`. The repos must be in the org where the action is used.
+      Set to `all` for PR code scanning alerts from all repos in the org. When `repos` is not set, the
+      action will get PR code scanning alerts for the repo where it is used.'
+    required: false
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

@@ -1,26 +1,22 @@
-const core = require('@actions/core');
-const github = require('@actions/github');
-const dotenv = require('dotenv');
-const getComments = require('./src/get-comments.js');
-const fs = require('fs');
+import * as github from '@actions/github';
+import * as core from '@actions/core';
+import * as dotenv from 'dotenv';
+import { alertsReport } from './src/pr-alerts-report.js';
 
-// const context = github.context;
+
+const context = github.context;
 
 async function main() {
   try {
-    dotenv.config();
-    const token = process.env.GH_PAT;
-    // const token = core.getInput('GITHUB_TOKEN');
+    const token = core.getInput('TOKEN');
     const octokit = new github.getOctokit(token);
-    const owner = 'org';
-    const repo = 'repo';
+    const total_days = core.getInput('days');
+    const repos = core.getInput('repos')
 
-    const comments = await getComments(owner, repo, octokit);
-
-    // return core.notice(size);
+    let reportSummary = await alertsReport.createReport(repos, total_days, context, octokit);
+    return core.notice(reportSummary);
   } catch (error) {
-    console.log('EEK: ', error);
-    // core.setFailed(error.message);
+    core.setFailed(error.message);
   }
 }
 
