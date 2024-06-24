@@ -4,7 +4,7 @@ import { orgRepos } from './org-repos.js';
 async function getAlerts(owner, repos, totalDays, octokit) {
   let reposList = [];
 
-  if (repos.length === 0) {
+  if (repos.length === 1 && repos[0] === 'all') {
     reposList = await orgRepos.getOrgRepos(owner, octokit);
   } else {
     reposList = repos;

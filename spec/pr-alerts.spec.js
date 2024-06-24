@@ -183,10 +183,10 @@ describe("PR Alerts", function() {
     expect(alerts[9].number).toEqual(43);
   });
 
-  it('gets alerts from all repos in an org when there are no repos specified', async function() {
+  it('gets alerts from all repos in an org when repos is set to `all`n', async function() {
     let repos = [];
 
-    const alerts = await prAlerts.getAlerts(owner, repos, totalDays, octokit);
+    const alerts = await prAlerts.getAlerts(owner, ['all'], totalDays, octokit);
 
     expect(octokit.paginate).toHaveBeenCalled();
     expect(orgRepos.getOrgRepos).toHaveBeenCalled();18

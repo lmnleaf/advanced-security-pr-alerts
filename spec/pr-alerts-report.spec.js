@@ -224,6 +224,12 @@ describe("Alerts Report", function() {
     expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', ['woot', 'cool'], 7, octokit);
   });
 
+  it('processes input when repos is set to `all`', async function() {
+    spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
+    await alertsReport.createReport('all', 7, context, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', ['all'], 7, octokit);
+  });
+
   it('handles errors', async function() {
     let repos = 'repo1,repo2';
     let caughtError;

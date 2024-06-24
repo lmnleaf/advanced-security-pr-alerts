@@ -14,8 +14,8 @@ inputs:
   repos:
     description: 'Comma-separated list of repository names from which PR code scanning alerts should be
       fetched. For example, `best-app,cool-app`. The repos must be in the org where the action is used.
-      When repos are not provided, the action will get PR code scanning alerts from the repo where it's
-      used.'
+      Set to `all` for PR code scanning alerts from all repos in the org. When `repos` is not set, the
+      action will get PR code scanning alerts for the repo where it is used.'
     required: false
 
 runs:
