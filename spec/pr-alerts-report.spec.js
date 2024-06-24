@@ -10,6 +10,7 @@ describe("Alerts Report", function() {
   let owner = 'org';
   let repos = 'repo';
   let days = 30;
+  let path = '/home/runner/work/this-repo/this-repo';
   let context = { repo: { owner: 'org', repo: 'repo' } };
   let mockData = [
     {
@@ -151,7 +152,7 @@ describe("Alerts Report", function() {
   });
 
  it ('creates a CSV of alerts', async function() {
-    await alertsReport.createReport(repos, days, context, octokit);
+    await alertsReport.createReport(repos, days, path, context, octokit);
 
     expect(repoPRs.getPRs).toHaveBeenCalledWith(owner, repos, days, octokit);
     expect(alertsReport.writeFile).toHaveBeenCalled();
@@ -160,7 +161,7 @@ describe("Alerts Report", function() {
     const filePath = args[0];
     const fileContent = args[1];
 
-    expect(filePath).toContain('temp/repo-pr-alerts-report-');
+    expect(filePath).toContain('/home/runner/work/this-repo/this-repo/pr-alerts-report-');
 
     const lines = fileContent.split('\n');
 
@@ -186,7 +187,7 @@ describe("Alerts Report", function() {
   });
 
   it ('returns a report summary', async function() {
-    const reportSummary= await alertsReport.createReport(repos, days, context, octokit);
+    const reportSummary= await alertsReport.createReport(repos, days, path, context, octokit);
 
     expect(reportSummary).toEqual({
       message: '9 PR alerts found.',
@@ -208,37 +209,37 @@ describe("Alerts Report", function() {
 
   it('processes input when no repos and no days are provided (defaults to current repo and 30 days)', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
-   await alertsReport.createReport(null, null, context, octokit);
+   await alertsReport.createReport(null, null, path, context, octokit);
     expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
   });
 
   it('processes input when repos and days are empty strings (defaults to current repo and 30 days)', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
-    await alertsReport.createReport('', '', context, octokit);
+    await alertsReport.createReport('', '', path, context, octokit);
     expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
   });
 
   it('processes input when repos and days are provided', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
-    await alertsReport.createReport('woot,cool', 7, context, octokit);
+    await alertsReport.createReport('woot,cool', 7, path, context, octokit);
     expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', ['woot', 'cool'], 7, octokit);
   });
 
   it('processes input when days is set to greater than 365 (defaults to 30 days)', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
-    await alertsReport.createReport(null, 500n, context, octokit);
+    await alertsReport.createReport(null, 500, path, context, octokit);
     expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
   });
 
   it('processes input when days is set to fewer than 1 (defaults to 30 days)', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
-    await alertsReport.createReport(null, 0, context, octokit);
+    await alertsReport.createReport(null, 0, path, context, octokit);
     expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
   });
 
   it('processes input when repos is set to `all`', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
-    await alertsReport.createReport('all', 7, context, octokit);
+    await alertsReport.createReport('all', 7, path, context, octokit);
     expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', ['all'], 7, octokit);
   });
 
@@ -248,7 +249,7 @@ describe("Alerts Report", function() {
     let octokitTestError = new Moctokit([], true);
 
     try {
-      await alertsReport.createReport(repos, null, context, octokitTestError);
+      await alertsReport.createReport(repos, null, path, context, octokitTestError);
     } catch (error) {
       caughtError = error;
     }

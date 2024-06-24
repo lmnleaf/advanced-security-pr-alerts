@@ -1,7 +1,7 @@
 import { prAlerts } from './pr-alerts.js';
 import * as fs from 'fs';
 
-async function createReport(reposInput, totalDaysInput, context, octokit) {
+async function createReport(reposInput, totalDaysInput, path, context, octokit) {
   let alertInfo = [];
 
   const { owner, repos, totalDays } = processInput(reposInput, totalDaysInput, context);
@@ -22,7 +22,7 @@ async function createReport(reposInput, totalDaysInput, context, octokit) {
       return info;
     });
 
-    writeReport(alerts);
+    writeReport(alerts, path);
   } catch (error) {
     throw error;
   }
@@ -32,7 +32,7 @@ async function createReport(reposInput, totalDaysInput, context, octokit) {
   return reportSummary(message, repos, alertInfo);
 }
 
-function writeReport (alerts) {
+function writeReport (alerts, path) {
   const csvRows = alerts.map((alert) => [
     alert.number,
     alert.rule.id,
@@ -93,8 +93,7 @@ function writeReport (alerts) {
 
   let csvDate = new Date().toISOString().slice(0, 10);
 
-  // TO DO: update path
-  alertsReport.writeFile('temp/repo-pr-alerts-report-' + csvDate + '.csv', csvRows.join("\r\n"), (error) => {
+  alertsReport.writeFile(path + '/pr-alerts-report-' + csvDate + '.csv', csvRows.join("\r\n"), (error) => {
     console.log(error || "report created successfully");
   });
 }

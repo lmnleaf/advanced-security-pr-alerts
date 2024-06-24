@@ -6,6 +6,9 @@ inputs:
     description: 'GitHub Token or Personal Access Token  - must use PAT to access alerts for repos other
       than the repo where the action is used.'
     required: true
+  path:
+    description: 'Path to the directory where the csv file should be saved.'
+    required: true
   total_days:
     description: 'Integer - fetches PRs for the past total_days. For example, if total_days is set `7`,
       the action will get code scanning alerts on PRs that have been updated in the past seven days.

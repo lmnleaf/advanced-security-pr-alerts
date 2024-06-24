@@ -31467,7 +31467,7 @@ var external_fs_ = __nccwpck_require__(7147);
 
 
 
-async function createReport(reposInput, totalDaysInput, context, octokit) {
+async function createReport(reposInput, totalDaysInput, path, context, octokit) {
   let alertInfo = [];
 
   const { owner, repos, totalDays } = processInput(reposInput, totalDaysInput, context);
@@ -31488,7 +31488,7 @@ async function createReport(reposInput, totalDaysInput, context, octokit) {
       return info;
     });
 
-    writeReport(alerts);
+    writeReport(alerts, path);
   } catch (error) {
     throw error;
   }
@@ -31498,7 +31498,7 @@ async function createReport(reposInput, totalDaysInput, context, octokit) {
   return reportSummary(message, repos, alertInfo);
 }
 
-function writeReport (alerts) {
+function writeReport (alerts, path) {
   const csvRows = alerts.map((alert) => [
     alert.number,
     alert.rule.id,
@@ -31559,8 +31559,7 @@ function writeReport (alerts) {
 
   let csvDate = new Date().toISOString().slice(0, 10);
 
-  // TO DO: update path
-  alertsReport.writeFile('temp/repo-pr-alerts-report-' + csvDate + '.csv', csvRows.join("\r\n"), (error) => {
+  alertsReport.writeFile(path + '/pr-alerts-report-' + csvDate + '.csv', csvRows.join("\r\n"), (error) => {
     console.log(error || "report created successfully");
   });
 }
@@ -31618,9 +31617,10 @@ async function index_main() {
     const token = core.getInput('TOKEN');
     const octokit = new github.getOctokit(token);
     const total_days = core.getInput('days');
-    const repos = core.getInput('repos')
+    const repos = core.getInput('repos');
+    const path = core.getInput('path');
 
-    let reportSummary = await alertsReport.createReport(repos, total_days, context, octokit);
+    let reportSummary = await alertsReport.createReport(repos, total_days, path, context, octokit);
     return core.notice(reportSummary);
   } catch (error) {
     core.setFailed(error.message);
