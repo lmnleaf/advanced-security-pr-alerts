@@ -206,27 +206,25 @@ describe("Alerts Report", function() {
   it ('returns a report summary', async function() {
     const reportSummary= await alertsReport.createReport(repos, days, path, context, octokit);
 
-    expect(reportSummary).toEqual({
-      message: '9 PR alerts found.',
-      alerts: [
-        { repo: 'repo', number: 43 },
-        { repo: 'repo', number: 42 },
-        { repo: 'repo', number: 41 },
-        { repo: 'repo1', number: 43 },
-        { repo: 'repo1', number: 42 },
-        { repo: 'repo1', number: 41 },
-        { repo: 'repo2', number: 43 },
-        { repo: 'repo2', number: 42 },
-        { repo: 'repo2', number: 41 }
-      ],
-      allOrgReposReviewed: false,
-      reposReviewed: [ 'repo' ]
-    });
+    expect(reportSummary).toEqual(
+      'Total PR alerts found: 9. \n' +
+      'All org repos reviewed: false. \n' +
+      'Repos reviewed: repo.'
+    );
+  });
+
+  it('returns a report summary when there are no PR alerts', async function() {
+    spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
+    const reportSummary= await alertsReport.createReport(repos, days, path, context, octokit);
+
+    expect(reportSummary).toEqual(
+      'No PR alerts found.'
+    );
   });
 
   it('processes input when no repos and no days are provided (defaults to current repo and 30 days)', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
-   await alertsReport.createReport(null, null, path, context, octokit);
+    await alertsReport.createReport(null, null, path, context, octokit);
     expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
   });
 

@@ -31476,7 +31476,7 @@ async function createReport(reposInput, totalDaysInput, path, context, octokit) 
     const alerts = await prAlerts.getAlerts(owner, repos, totalDays, octokit);
 
     if (alerts.length === 0) {
-      return reportSummary('No PR alerts found.', repos, []);
+      return 'No PR alerts found.';
     }
 
     alertInfo = alerts.map((alert) => {
@@ -31492,10 +31492,8 @@ async function createReport(reposInput, totalDaysInput, path, context, octokit) 
   } catch (error) {
     throw error;
   }
-
-  let message = alertInfo.length.toString() + ' PR alerts found.';
  
-  return reportSummary(message, repos, alertInfo);
+  return reportSummary(repos, alertInfo);
 }
 
 function writeReport (alerts, path) {
@@ -31568,13 +31566,10 @@ function writeFile (path, data, callback) {
   external_fs_.writeFile(path, data, callback);
 }
 
-function reportSummary (message, repos, alertInfo) {
-  let reportSummary = {
-    message: message,
-    alerts: alertInfo,
-    allOrgReposReviewed: repos.length === 0 ? true : false,
-    reposReviewed: repos.length > 0 ? repos : ['All Org Repos']
-  }
+function reportSummary (repos, alertInfo) {
+  let reportSummary = 'Total PR alerts found: ' + alertInfo.length.toString() + '. \n' +
+    'All org repos reviewed: ' + (repos.length === 0 ? 'true' : 'false') + '. \n' +
+    'Repos reviewed: ' + (repos.length > 0 ? repos.join(', ') + '.' : 'All Org Repos.');
 
   return reportSummary;
 }
