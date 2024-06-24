@@ -172,6 +172,8 @@ describe("PR Alerts", function() {
 
     const alerts = await prAlerts.getAlerts(owner, repos, totalDays, octokit);
 
+    // TO DO: this is not very well tested. Would like to test the arguments
+    // passed to paginate.
     expect(octokit.paginate).toHaveBeenCalled();
     expect(repoPRs.getPRs).toHaveBeenCalledWith(owner, 'repo', 30, octokit);
 
@@ -183,7 +185,7 @@ describe("PR Alerts", function() {
     expect(alerts[9].number).toEqual(43);
   });
 
-  it('gets alerts from all repos in an org when repos is set to `all`n', async function() {
+  it('gets alerts from all repos in an org when repos is set to `all`', async function() {
     let repos = [];
 
     const alerts = await prAlerts.getAlerts(owner, ['all'], totalDays, octokit);

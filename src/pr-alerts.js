@@ -28,9 +28,8 @@ async function getAlerts(owner, repos, totalDays, octokit) {
         {
           owner,
           repo: pr.repo,
-          ref: `refs/pull/${pr.number}/head`,
-          // per_page should eventually be 100
-          per_page: 5,
+          ref: 'refs/pull/' + pr.number + '/merge',
+          per_page: 100,
         },
         (response, done) => {
           prAlerts.push(...response.data);
