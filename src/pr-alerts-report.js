@@ -89,9 +89,7 @@ function writeReport (alerts, path) {
     'pr_updated_at'
   ]);
 
-  let csvDate = new Date().toISOString().slice(0, 10);
-
-  alertsReport.writeFile(path + '/pr-alerts-report-' + csvDate + '.csv', csvRows.join("\r\n"), (error) => {
+  alertsReport.writeFile(path + '/pr-alerts-report.csv', csvRows.join("\r\n"), (error) => {
     console.log(error || "report created successfully");
   });
 }

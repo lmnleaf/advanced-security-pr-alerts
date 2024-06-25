@@ -161,7 +161,7 @@ describe("Alerts Report", function() {
     const filePath = args[0];
     const fileContent = args[1];
 
-    expect(filePath).toContain('/home/runner/work/this-repo/this-repo/pr-alerts-report-');
+    expect(filePath).toContain('/home/runner/work/this-repo/this-repo/pr-alerts-report.csv');
 
     const lines = fileContent.split('\n');
 
