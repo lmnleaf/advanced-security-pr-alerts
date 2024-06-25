@@ -23,7 +23,7 @@ async function getAlerts(owner, repos, totalDays, octokit) {
     let prAlerts = [];
 
     try {
-      await octokit.paginate(
+      const mergeAlerts = await octokit.paginate(
         octokit.rest.codeScanning.listAlertsForRepo,
         {
           owner,
@@ -35,6 +35,21 @@ async function getAlerts(owner, repos, totalDays, octokit) {
           prAlerts.push(...response.data);
         }
       );
+
+      const headAlerts = await octokit.paginate(
+        octokit.rest.codeScanning.listAlertsForRepo,
+        {
+          owner,
+          repo: pr.repo,
+          ref: 'refs/pull/' + pr.number + '/head',
+          per_page: 100,
+        },
+        (response, done) => {
+          prAlerts.push(...response.data);
+        }
+      );
+
+      await Promise.all([mergeAlerts, headAlerts]);
     } catch (error) {
       if (error.message.includes('no analysis found')) {
         continue;

@@ -165,7 +165,7 @@ describe("Alerts Report", function() {
 
     const lines = fileContent.split('\n');
 
-    expect(lines.length).toBe(10);
+    expect(lines.length).toBe(19);
     expect(lines[0]).toContain(
       'number,rule_id,rule_security_severity_level,rule_severity,description,state,' +
       'most_recent_instance_state,most_recent_instance_ref,most_recent_commit_sha,most_recent_instance_path,' + 
@@ -207,7 +207,7 @@ describe("Alerts Report", function() {
     const reportSummary= await alertsReport.createReport(repos, days, path, context, octokit);
 
     expect(reportSummary).toEqual(
-      'Total PR alerts found: 9. \n' +
+      'Total PR alerts found: 18. \n' +
       'All org repos reviewed: false. \n' +
       'Repos reviewed: repo.'
     );

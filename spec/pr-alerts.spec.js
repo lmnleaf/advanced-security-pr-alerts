@@ -175,13 +175,14 @@ describe("PR Alerts", function() {
     // TO DO: this is not very well tested. Would like to test the arguments
     // passed to paginate.
     expect(octokit.paginate).toHaveBeenCalled();
+    expect(octokit.paginate.calls.count()).toEqual(18);
     expect(repoPRs.getPRs).toHaveBeenCalledWith(owner, 'repo', 30, octokit);
 
     expect(alerts[0].number).toEqual(43);
     expect(alerts[0].pr.repo).toEqual('repo');
     expect(alerts[1].number).toEqual(42);
     expect(alerts[8].number).toEqual(41);
-    expect(alerts[8].pr.repo).toEqual('repo2');
+    expect(alerts[8].pr.repo).toEqual('repo1');
     expect(alerts[9].number).toEqual(43);
   });
 
@@ -191,14 +192,15 @@ describe("PR Alerts", function() {
     const alerts = await prAlerts.getAlerts(owner, ['all'], totalDays, octokit);
 
     expect(octokit.paginate).toHaveBeenCalled();
-    expect(orgRepos.getOrgRepos).toHaveBeenCalled();18
+    expect(octokit.paginate.calls.count()).toEqual(18);
+    expect(orgRepos.getOrgRepos).toHaveBeenCalled();
     expect(repoPRs.getPRs).toHaveBeenCalled();
 
     expect(alerts[0].number).toEqual(43);
     expect(alerts[0].pr.repo).toEqual('repo');
     expect(alerts[1].number).toEqual(42);
     expect(alerts[8].number).toEqual(41);
-    expect(alerts[8].pr.repo).toEqual('repo2');
+    expect(alerts[8].pr.repo).toEqual('repo1');
     expect(alerts[9].number).toEqual(43);
   });
 
