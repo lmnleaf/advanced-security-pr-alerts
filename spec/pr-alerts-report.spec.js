@@ -10,6 +10,7 @@ describe("Alerts Report", function() {
   let owner = 'org';
   let repos = 'repo';
   let days = 30;
+  let path = '/home/runner/work/this-repo/this-repo';
   let context = { repo: { owner: 'org', repo: 'repo' } };
   let mockData = [
     {
@@ -31,7 +32,7 @@ describe("Alerts Report", function() {
       },
       tool: {
         name: "CodeScanner",
-        version: "1.0.0"
+        version: null
       },
       dismissed_at: null,
       dismissed_by: null,
@@ -59,7 +60,7 @@ describe("Alerts Report", function() {
         }
       },
       tool: {
-        name: "CodeScanner",
+        name: null,
         version: "1.0.0"
       },
       dismissed_at: null,
@@ -92,7 +93,7 @@ describe("Alerts Report", function() {
         version: "1.0.0"
       },
       dismissed_at: "2024-05-01T12:00:00Z",
-      dismissed_by: 'cool',
+      dismissed_by: { login: 'cool' },
       dismissed_reason: 'used in specs',
       dismissed_comment: 'This is used in specs',
       fixed_at: null,
@@ -151,7 +152,7 @@ describe("Alerts Report", function() {
   });
 
  it ('creates a CSV of alerts', async function() {
-    await alertsReport.createReport(repos, days, context, octokit);
+    await alertsReport.createReport(repos, days, path, context, octokit);
 
     expect(repoPRs.getPRs).toHaveBeenCalledWith(owner, repos, days, octokit);
     expect(alertsReport.writeFile).toHaveBeenCalled();
@@ -160,11 +161,11 @@ describe("Alerts Report", function() {
     const filePath = args[0];
     const fileContent = args[1];
 
-    expect(filePath).toContain('temp/repo-pr-alerts-report-');
+    expect(filePath).toContain('/home/runner/work/this-repo/this-repo/pr-alerts-report.csv');
 
     const lines = fileContent.split('\n');
 
-    expect(lines.length).toBe(10);
+    expect(lines.length).toBe(19);
     expect(lines[0]).toContain(
       'number,rule_id,rule_security_severity_level,rule_severity,description,state,' +
       'most_recent_instance_state,most_recent_instance_ref,most_recent_commit_sha,most_recent_instance_path,' + 
@@ -177,56 +178,83 @@ describe("Alerts Report", function() {
     expect(lines[1]).toContain(
       '43,rule-123,high,critical,This rule detects SQL injection vulnerabilities.,open,' +
       'active,refs/heads/main,a1b2c3d4e5f6,/src/database/queries.js,' +
-      'CodeScanner,1.0.0,' +
+      'CodeScanner,,' +
       '2024-05-01T12:00:00Z,' +
       ',,,,' +
       '2023-04-01T12:00:00Z,2023-04-02T12:00:00Z,' +
       'repo,10,cool,closed,false,2023-04-01T12:00:00Z,2023-04-02T12:00:00Z'
     );
+    expect(lines[2]).toContain(
+      '42,rule-124,high,critical,This rule detects log injection vulnerabilities.,open,' +
+      'active,refs/heads/main,a1b5l3d4e5f6,/src/database/queries.js,' +
+      ',1.0.0,' +
+      ',,,,,' +
+      '2023-04-15T12:00:00Z,2023-04-15T12:00:00Z,' +
+      'repo,10,cool,closed,false,2023-04-01T12:00:00Z,2023-04-02T12:00:00Z'
+    );
+    expect(lines[3]).toContain(
+      '41,rule-124,high,critical,This rule detects log injection vulnerabilities.,open,' +
+      'active,refs/heads/main,a1b4p7z4e5f6,/src/database/queries.js,' +
+      'CodeScanner,1.0.0,' +
+      ',' +
+      '2024-05-01T12:00:00Z,cool,used in specs,This is used in specs,' +
+      '2023-04-15T12:00:00Z,2023-04-15T12:00:00Z,' +
+      'repo,10,cool,closed,false,2023-04-01T12:00:00Z,2023-04-02T12:00:00Z'
+    );
   });
 
   it ('returns a report summary', async function() {
-    const reportSummary= await alertsReport.createReport(repos, days, context, octokit);
+    const reportSummary= await alertsReport.createReport(repos, days, path, context, octokit);
 
-    expect(reportSummary).toEqual({
-      message: '9 PR alerts found.',
-      alerts: [
-        { repo: 'repo', number: 43 },
-        { repo: 'repo', number: 42 },
-        { repo: 'repo', number: 41 },
-        { repo: 'repo1', number: 43 },
-        { repo: 'repo1', number: 42 },
-        { repo: 'repo1', number: 41 },
-        { repo: 'repo2', number: 43 },
-        { repo: 'repo2', number: 42 },
-        { repo: 'repo2', number: 41 }
-      ],
-      allOrgReposReviewed: false,
-      reposReviewed: [ 'repo' ]
-    });
+    expect(reportSummary).toEqual(
+      'Total PR alerts found: 18. \n' +
+      'All org repos reviewed: false. \n' +
+      'Repos reviewed: repo.'
+    );
   });
 
-  it('processes input when no repos and no days are provided', async function() {
+  it('returns a report summary when there are no PR alerts', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
-   await alertsReport.createReport(null, null, context, octokit);
+    const reportSummary= await alertsReport.createReport(repos, days, path, context, octokit);
+
+    expect(reportSummary).toEqual(
+      'No PR alerts found.'
+    );
+  });
+
+  it('processes input when no repos and no days are provided (defaults to current repo and 30 days)', async function() {
+    spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
+    await alertsReport.createReport(null, null, path, context, octokit);
     expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
   });
 
-  it('processes input when repos and days are empty strings', async function() {
+  it('processes input when repos and days are empty strings (defaults to current repo and 30 days)', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
-    await alertsReport.createReport('', '', context, octokit);
+    await alertsReport.createReport('', '', path, context, octokit);
     expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
   });
 
   it('processes input when repos and days are provided', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
-    await alertsReport.createReport('woot,cool', 7, context, octokit);
+    await alertsReport.createReport('woot,cool', 7, path, context, octokit);
     expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', ['woot', 'cool'], 7, octokit);
+  });
+
+  it('processes input when days is set to greater than 365 (defaults to 30 days)', async function() {
+    spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
+    await alertsReport.createReport(null, 500, path, context, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
+  });
+
+  it('processes input when days is set to fewer than 1 (defaults to 30 days)', async function() {
+    spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
+    await alertsReport.createReport(null, 0, path, context, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
   });
 
   it('processes input when repos is set to `all`', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
-    await alertsReport.createReport('all', 7, context, octokit);
+    await alertsReport.createReport('all', 7, path, context, octokit);
     expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', ['all'], 7, octokit);
   });
 
@@ -236,7 +264,7 @@ describe("Alerts Report", function() {
     let octokitTestError = new Moctokit([], true);
 
     try {
-      await alertsReport.createReport(repos, null, context, octokitTestError);
+      await alertsReport.createReport(repos, null, path, context, octokitTestError);
     } catch (error) {
       caughtError = error;
     }

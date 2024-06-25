@@ -12,8 +12,7 @@ async function getPRs(owner, repo, totalDays, octokit) {
         owner,
         repo,
         state: 'all',
-        // per page should eventually be 100
-        per_page: 5
+        per_page: 100
       },
       (response, done) => {
         // stop on updated_at date

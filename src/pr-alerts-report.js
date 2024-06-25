@@ -1,7 +1,7 @@
 import { prAlerts } from './pr-alerts.js';
 import * as fs from 'fs';
 
-async function createReport(reposInput, totalDaysInput, context, octokit) {
+async function createReport(reposInput, totalDaysInput, path, context, octokit) {
   let alertInfo = [];
 
   const { owner, repos, totalDays } = processInput(reposInput, totalDaysInput, context);
@@ -10,7 +10,7 @@ async function createReport(reposInput, totalDaysInput, context, octokit) {
     const alerts = await prAlerts.getAlerts(owner, repos, totalDays, octokit);
 
     if (alerts.length === 0) {
-      return reportSummary('No PR alerts found.', repos, []);
+      return 'No PR alerts found.';
     }
 
     alertInfo = alerts.map((alert) => {
@@ -22,17 +22,15 @@ async function createReport(reposInput, totalDaysInput, context, octokit) {
       return info;
     });
 
-    writeReport(alerts);
+    writeReport(alerts, path);
   } catch (error) {
     throw error;
   }
-
-  let message = alertInfo.length.toString() + ' PR alerts found.';
  
-  return reportSummary(message, repos, alertInfo);
+  return reportSummary(repos, alertInfo);
 }
 
-function writeReport (alerts) {
+function writeReport (alerts, path) {
   const csvRows = alerts.map((alert) => [
     alert.number,
     alert.rule.id,
@@ -44,11 +42,11 @@ function writeReport (alerts) {
     alert.most_recent_instance.ref,
     alert.most_recent_instance.commit_sha,
     alert.most_recent_instance.location.path,
-    alert.tool.name,
-    alert.tool.version,
+    (alert.tool != null ? alert.tool.name : null),
+    (alert.tool != null ? alert.tool.version : null),
     alert.fixed_at,
     alert.dismissed_at,
-    alert.dismissed_by,
+    (alert.dismissed_by != null ? alert.dismissed_by.login : null),
     alert.dismissed_reason,
     alert.dismissed_comment,
     alert.created_at,
@@ -91,10 +89,7 @@ function writeReport (alerts) {
     'pr_updated_at'
   ]);
 
-  let csvDate = new Date().toISOString().slice(0, 10);
-
-  // TO DO: update path
-  alertsReport.writeFile('temp/repo-pr-alerts-report-' + csvDate + '.csv', csvRows.join("\r\n"), (error) => {
+  alertsReport.writeFile(path + '/pr-alerts-report.csv', csvRows.join("\r\n"), (error) => {
     console.log(error || "report created successfully");
   });
 }
@@ -103,13 +98,10 @@ function writeFile (path, data, callback) {
   fs.writeFile(path, data, callback);
 }
 
-function reportSummary (message, repos, alertInfo) {
-  let reportSummary = {
-    message: message,
-    alerts: alertInfo,
-    allOrgReposReviewed: repos.length === 0 ? true : false,
-    reposReviewed: repos.length > 0 ? repos : ['All Org Repos']
-  }
+function reportSummary (repos, alertInfo) {
+  let reportSummary = 'Total PR alerts found: ' + alertInfo.length.toString() + '. \n' +
+    'All org repos reviewed: ' + (repos.length === 0 ? 'true' : 'false') + '. \n' +
+    'Repos reviewed: ' + (repos.length > 0 ? repos.join(', ') + '.' : 'All Org Repos.');
 
   return reportSummary;
 }
@@ -126,7 +118,7 @@ function processInput (repos, totalDays, context) {
   }
 
   let days = parseInt(totalDays);
-  if (days != NaN && days > 0 && days < 101) {
+  if (days != NaN && days > 0 && days <= 365) {
     input.totalDays = days;
   }
 
