@@ -1,15 +1,17 @@
 import { alertsReport } from '../src/pr-alerts-report.js';
 import { repoPRs } from '../src/repo-prs.js';
 import { prAlerts } from '../src/pr-alerts.js';
+import { refAlerts } from '../src/ref-alerts.js';
 import Moctokit from './support/moctokit.js';
 
 describe("Alerts Report", function() {
   let octokit;
-  let getPRsOriginal;
+  // let getPRsOriginal;
   let getAlertsOriginal;
   let owner = 'org';
   let repos = 'repo';
   let days = 30;
+  let commentAlertsOnly = false;
   let path = '/home/runner/work/this-repo/this-repo';
   let context = { repo: { owner: 'org', repo: 'repo' } };
   let mockData = [
@@ -33,6 +35,15 @@ describe("Alerts Report", function() {
       tool: {
         name: "CodeScanner",
         version: null
+      },
+      pr: {
+        repo: 'repo',
+        number: 12,
+        user: 'cool',
+        state: 'closed',
+        draft: false,
+        merged_at: "2023-04-01T12:00:00Z",
+        updated_at: "2023-04-02T12:00:00Z"
       },
       dismissed_at: null,
       dismissed_by: null,
@@ -63,6 +74,15 @@ describe("Alerts Report", function() {
         name: null,
         version: "1.0.0"
       },
+      pr: {
+        repo: 'repo2',
+        number: 11,
+        user: 'cool',
+        state: 'open',
+        draft: false,
+        merged_at: null,
+        updated_at: "2023-04-15T12:00:00Z"
+      },
       dismissed_at: null,
       dismissed_by: null,
       dismissed_reason: null,
@@ -92,6 +112,15 @@ describe("Alerts Report", function() {
         name: "CodeScanner",
         version: "1.0.0"
       },
+      pr: {
+        repo: 'repo',
+        number: 10,
+        user: 'cool',
+        state: 'open',
+        draft: false,
+        merged_at: null,
+        updated_at: "2023-04-02T12:00:00Z"
+      },
       dismissed_at: "2024-05-01T12:00:00Z",
       dismissed_by: { login: 'cool' },
       dismissed_reason: 'used in specs',
@@ -103,42 +132,9 @@ describe("Alerts Report", function() {
   ]
 
   beforeEach(() => {
-    octokit = new Moctokit(mockData);
+    octokit = new Moctokit();
 
-    // NOTE: Please see notes about why I've set up the exports and
-    // mocks this way in the pr-alerts.spec.js file.
-    getPRsOriginal = repoPRs.getPRs;
-    repoPRs.getPRs = jasmine.createSpy('getPRs').and.returnValue(
-      Promise.resolve([
-        {
-          repo: 'repo',
-          number: 10,
-          user: 'cool',
-          state: 'closed',
-          draft: false,
-          merged_at: '2023-04-01T12:00:00Z',
-          updated_at: '2023-04-02T12:00:00Z'
-        },
-        {
-          repo: 'repo1',
-          number: 9,
-          user: 'wow',
-          state: 'open',
-          draft: false,
-          merged_at: null,
-          updated_at: '2023-04-02T12:00:00Z'
-        },
-        {
-          repo: 'repo2',
-          number: 8,
-          user: 'yip',
-          state: 'open',
-          draft: true,
-          merged_at: null,
-          updated_at: '2023-04-02T12:00:00Z'
-        }
-      ])
-    );
+    getAlertsOriginal = prAlerts.getAlerts;
 
     alertsReport.writeFile = jasmine.createSpy('writeFile').and.callFake((path, data, callback) => {
       callback(null); // Simulate successful write operation
@@ -147,14 +143,15 @@ describe("Alerts Report", function() {
 
   afterEach(() => {
     // reset to original module function, so doesn't affect other tests
-    repoPRs.getPRs = getPRsOriginal;
-    repoPRs.getAlerts = getAlertsOriginal;
+    prAlerts.getAlerts = getAlertsOriginal;
   });
 
  it ('creates a CSV of alerts', async function() {
-    await alertsReport.createReport(repos, days, path, context, octokit);
+    spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve(mockData));
 
-    expect(repoPRs.getPRs).toHaveBeenCalledWith(owner, repos, days, octokit);
+    await alertsReport.createReport(repos, days, commentAlertsOnly, path, context, octokit);
+
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith(owner, [repos], days, commentAlertsOnly, octokit);
     expect(alertsReport.writeFile).toHaveBeenCalled();
 
     const args = alertsReport.writeFile.calls.mostRecent().args;
@@ -165,7 +162,7 @@ describe("Alerts Report", function() {
 
     const lines = fileContent.split('\n');
 
-    expect(lines.length).toBe(19);
+    expect(lines.length).toBe(4);
     expect(lines[0]).toContain(
       'number,rule_id,rule_security_severity_level,rule_severity,description,state,' +
       'most_recent_instance_state,most_recent_instance_ref,most_recent_commit_sha,most_recent_instance_path,' + 
@@ -182,7 +179,7 @@ describe("Alerts Report", function() {
       '2024-05-01T12:00:00Z,' +
       ',,,,' +
       '2023-04-01T12:00:00Z,2023-04-02T12:00:00Z,' +
-      'repo,10,cool,closed,false,2023-04-01T12:00:00Z,2023-04-02T12:00:00Z'
+      'repo,12,cool,closed,false,2023-04-01T12:00:00Z,2023-04-02T12:00:00Z'
     );
     expect(lines[2]).toContain(
       '42,rule-124,high,critical,This rule detects log injection vulnerabilities.,open,' +
@@ -190,7 +187,7 @@ describe("Alerts Report", function() {
       ',1.0.0,' +
       ',,,,,' +
       '2023-04-15T12:00:00Z,2023-04-15T12:00:00Z,' +
-      'repo,10,cool,closed,false,2023-04-01T12:00:00Z,2023-04-02T12:00:00Z'
+      'repo2,11,cool,open,false,,2023-04-15T12:00:00Z'
     );
     expect(lines[3]).toContain(
       '41,rule-124,high,critical,This rule detects log injection vulnerabilities.,open,' +
@@ -199,15 +196,17 @@ describe("Alerts Report", function() {
       ',' +
       '2024-05-01T12:00:00Z,cool,used in specs,This is used in specs,' +
       '2023-04-15T12:00:00Z,2023-04-15T12:00:00Z,' +
-      'repo,10,cool,closed,false,2023-04-01T12:00:00Z,2023-04-02T12:00:00Z'
+      'repo,10,cool,open,false,,2023-04-02T12:00:00Z'
     );
   });
 
   it ('returns a report summary', async function() {
-    const reportSummary= await alertsReport.createReport(repos, days, path, context, octokit);
+    spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve(mockData));
+
+    const reportSummary= await alertsReport.createReport(repos, days, commentAlertsOnly, path, context, octokit);
 
     expect(reportSummary).toEqual(
-      'Total PR alerts found: 18. \n' +
+      'Total PR alerts found: 3. \n' +
       'All org repos reviewed: false. \n' +
       'Repos reviewed: repo.'
     );
@@ -215,7 +214,7 @@ describe("Alerts Report", function() {
 
   it('returns a report summary when there are no PR alerts', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
-    const reportSummary= await alertsReport.createReport(repos, days, path, context, octokit);
+    const reportSummary= await alertsReport.createReport(repos, days, commentAlertsOnly, path, context, octokit);
 
     expect(reportSummary).toEqual(
       'No PR alerts found.'
@@ -224,47 +223,47 @@ describe("Alerts Report", function() {
 
   it('processes input when no repos and no days are provided (defaults to current repo and 30 days)', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
-    await alertsReport.createReport(null, null, path, context, octokit);
-    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
+    await alertsReport.createReport(null, null, commentAlertsOnly, path, context, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, commentAlertsOnly, octokit);
   });
 
   it('processes input when repos and days are empty strings (defaults to current repo and 30 days)', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
-    await alertsReport.createReport('', '', path, context, octokit);
-    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
+    await alertsReport.createReport('', '', false, path, context, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, commentAlertsOnly, octokit);
   });
 
   it('processes input when repos and days are provided', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
-    await alertsReport.createReport('woot,cool', 7, path, context, octokit);
-    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', ['woot', 'cool'], 7, octokit);
+    await alertsReport.createReport('woot,cool', 7, false, path, context, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', ['woot', 'cool'], 7, commentAlertsOnly, octokit);
   });
 
   it('processes input when days is set to greater than 365 (defaults to 30 days)', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
-    await alertsReport.createReport(null, 500, path, context, octokit);
-    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
+    await alertsReport.createReport(null, 500, commentAlertsOnly, path, context, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, commentAlertsOnly, octokit);
   });
 
   it('processes input when days is set to fewer than 1 (defaults to 30 days)', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
-    await alertsReport.createReport(null, 0, path, context, octokit);
-    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, octokit);
+    await alertsReport.createReport(null, 0, commentAlertsOnly, path, context, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [context.repo.repo], 30, commentAlertsOnly, octokit);
   });
 
   it('processes input when repos is set to `all`', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
-    await alertsReport.createReport('all', 7, path, context, octokit);
-    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', ['all'], 7, octokit);
+    await alertsReport.createReport('all', 7, commentAlertsOnly, path, context, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', ['all'], 7, commentAlertsOnly, octokit);
   });
 
   it('handles errors', async function() {
     let repos = 'repo1,repo2';
     let caughtError;
-    let octokitTestError = new Moctokit([], true);
+    spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.reject(new Error('fetch error')));
 
     try {
-      await alertsReport.createReport(repos, null, path, context, octokitTestError);
+      await alertsReport.createReport(repos, null, commentAlertsOnly, path, context, octokit);
     } catch (error) {
       caughtError = error;
     }

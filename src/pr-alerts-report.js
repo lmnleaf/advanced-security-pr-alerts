@@ -1,13 +1,13 @@
 import { prAlerts } from './pr-alerts.js';
 import * as fs from 'fs';
 
-async function createReport(reposInput, totalDaysInput, path, context, octokit) {
+async function createReport(reposInput, totalDaysInput, commentAlertsOnly, path, context, octokit) {
   let alertInfo = [];
 
   const { owner, repos, totalDays } = processInput(reposInput, totalDaysInput, context);
 
   try {
-    const alerts = await prAlerts.getAlerts(owner, repos, totalDays, octokit);
+    const alerts = await prAlerts.getAlerts(owner, repos, totalDays, commentAlertsOnly, octokit);
 
     if (alerts.length === 0) {
       return 'No PR alerts found.';
