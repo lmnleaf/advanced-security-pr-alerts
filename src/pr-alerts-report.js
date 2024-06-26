@@ -38,6 +38,7 @@ function writeReport (alerts, path) {
     alert.rule.severity,
     alert.rule.description,
     alert.state,
+    alert.inPRComment,
     alert.most_recent_instance.state,
     alert.most_recent_instance.ref,
     alert.most_recent_instance.commit_sha,
@@ -56,8 +57,8 @@ function writeReport (alerts, path) {
     alert.pr.user,
     alert.pr.state,
     alert.pr.draft,
-    alert.pr.merged_at,
-    alert.pr.updated_at
+    alert.pr.mergedAt,
+    alert.pr.updatedAt
   ]);
 
   csvRows.unshift([
@@ -67,6 +68,7 @@ function writeReport (alerts, path) {
     'rule_severity',
     'description',
     'state',
+    'in_pr_comment',
     'most_recent_instance_state',
     'most_recent_instance_ref',
     'most_recent_commit_sha',

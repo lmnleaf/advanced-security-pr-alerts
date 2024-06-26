@@ -24,6 +24,7 @@ describe("Alerts Report", function() {
         description: "This rule detects SQL injection vulnerabilities."
       },
       state: "open",
+      inPRComment: false,
       most_recent_instance: {
         state: "active",
         ref: "refs/heads/main",
@@ -42,8 +43,8 @@ describe("Alerts Report", function() {
         user: 'cool',
         state: 'closed',
         draft: false,
-        merged_at: "2023-04-01T12:00:00Z",
-        updated_at: "2023-04-02T12:00:00Z"
+        mergedAt: "2023-04-01T12:00:00Z",
+        updatedAt: "2023-04-02T12:00:00Z"
       },
       dismissed_at: null,
       dismissed_by: null,
@@ -62,6 +63,7 @@ describe("Alerts Report", function() {
         description: "This rule detects log injection vulnerabilities."
       },
       state: "open",
+      inPRComment: false,
       most_recent_instance: {
         state: "active",
         ref: "refs/heads/main",
@@ -80,8 +82,8 @@ describe("Alerts Report", function() {
         user: 'cool',
         state: 'open',
         draft: false,
-        merged_at: null,
-        updated_at: "2023-04-15T12:00:00Z"
+        mergedAt: null,
+        updatedAt: "2023-04-15T12:00:00Z"
       },
       dismissed_at: null,
       dismissed_by: null,
@@ -100,6 +102,7 @@ describe("Alerts Report", function() {
         description: "This rule detects log injection vulnerabilities."
       },
       state: "open",
+      inPRComment: true,
       most_recent_instance: {
         state: "active",
         ref: "refs/heads/main",
@@ -118,8 +121,8 @@ describe("Alerts Report", function() {
         user: 'cool',
         state: 'open',
         draft: false,
-        merged_at: null,
-        updated_at: "2023-04-02T12:00:00Z"
+        mergedAt: null,
+        updatedAt: "2023-04-02T12:00:00Z"
       },
       dismissed_at: "2024-05-01T12:00:00Z",
       dismissed_by: { login: 'cool' },
@@ -165,6 +168,7 @@ describe("Alerts Report", function() {
     expect(lines.length).toBe(4);
     expect(lines[0]).toContain(
       'number,rule_id,rule_security_severity_level,rule_severity,description,state,' +
+      'in_pr_comment,' +
       'most_recent_instance_state,most_recent_instance_ref,most_recent_commit_sha,most_recent_instance_path,' + 
       'tool,tool_version,' + 
       'fixed_at,' + 
@@ -174,6 +178,7 @@ describe("Alerts Report", function() {
     );
     expect(lines[1]).toContain(
       '43,rule-123,high,critical,This rule detects SQL injection vulnerabilities.,open,' +
+      'false,' +
       'active,refs/heads/main,a1b2c3d4e5f6,/src/database/queries.js,' +
       'CodeScanner,,' +
       '2024-05-01T12:00:00Z,' +
@@ -183,6 +188,7 @@ describe("Alerts Report", function() {
     );
     expect(lines[2]).toContain(
       '42,rule-124,high,critical,This rule detects log injection vulnerabilities.,open,' +
+      'false,' +
       'active,refs/heads/main,a1b5l3d4e5f6,/src/database/queries.js,' +
       ',1.0.0,' +
       ',,,,,' +
@@ -191,6 +197,7 @@ describe("Alerts Report", function() {
     );
     expect(lines[3]).toContain(
       '41,rule-124,high,critical,This rule detects log injection vulnerabilities.,open,' +
+      'true,' +
       'active,refs/heads/main,a1b4p7z4e5f6,/src/database/queries.js,' +
       'CodeScanner,1.0.0,' +
       ',' +

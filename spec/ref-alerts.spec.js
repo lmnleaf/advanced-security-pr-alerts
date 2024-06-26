@@ -1,5 +1,6 @@
 import { repoPRs } from '../src/repo-prs.js';
 import { orgRepos } from '../src/org-repos.js';
+import { commentAlertNumbers } from '../src/comment-alert-numbers.js';
 import { refAlerts } from '../src/ref-alerts.js';
 import Moctokit from './support/moctokit.js';
 
@@ -7,6 +8,7 @@ describe("PR Alerts", function() {
   let octokit;
   let getPRsOriginal;
   let getOrgReposOriginal;
+  let getNumbersOriginal;
   let owner = 'org';
   let totalDays = 30;
   let mockData = [
@@ -159,12 +161,20 @@ describe("PR Alerts", function() {
         }
       ])
     );
+
+    getNumbersOriginal = commentAlertNumbers.getNumbers;
+    commentAlertNumbers.getNumbers = jasmine.createSpy('getNumbers').and.returnValue(
+      Promise.resolve([
+        { pr: 'NA', repo: 'NA', alertNumber: 43 },
+      ])
+    );
   });
 
   afterEach(() => {
     // reset to original module function, so doesn't affect other tests
     repoPRs.getPRs = getPRsOriginal;
     orgRepos.getOrgRepos = getOrgReposOriginal;
+    commentAlertNumbers.getNumbers = getNumbersOriginal;
   });
 
   it ('gets alerts from a list of PRs', async function() {
@@ -180,10 +190,13 @@ describe("PR Alerts", function() {
 
     expect(alerts[0].number).toEqual(43);
     expect(alerts[0].pr.repo).toEqual('repo');
+    expect(alerts[0].inPRComment).toEqual(true);
     expect(alerts[1].number).toEqual(42);
     expect(alerts[8].number).toEqual(41);
     expect(alerts[8].pr.repo).toEqual('repo1');
+    expect(alerts[8].inPRComment).toEqual(false);
     expect(alerts[9].number).toEqual(43);
+    expect(alerts[9].inPRComment).toEqual(true);
   });
 
   it('gets alerts from all repos in an org when repos is set to `all`', async function() {
@@ -202,6 +215,20 @@ describe("PR Alerts", function() {
     expect(alerts[8].number).toEqual(41);
     expect(alerts[8].pr.repo).toEqual('repo1');
     expect(alerts[9].number).toEqual(43);
+  });
+
+  it('sets the pr values on the alert', async function() {
+    let repos = ['repo'];
+
+    const alerts = await refAlerts.getAlerts(owner, repos, totalDays, octokit)
+
+    expect(alerts[0].number).toEqual(43);
+    expect(alerts[0].pr.repo).toEqual('repo');
+    expect(alerts[0].pr.user).toEqual('cool');
+    expect(alerts[0].pr.state).toEqual('closed');
+    expect(alerts[0].pr.draft).toEqual(false);
+    expect(alerts[0].pr.mergedAt).toEqual('2023-04-01T12:00:00Z');
+    expect(alerts[0].pr.updatedAt).toEqual('2023-04-02T12:00:00Z');
   });
 
   it('continues to next PR if no analysis found', async function() {
