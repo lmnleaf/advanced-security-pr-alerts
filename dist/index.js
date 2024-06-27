@@ -31391,6 +31391,33 @@ const orgRepos = {
   getOrgRepos: getOrgRepos
 }
 
+;// CONCATENATED MODULE: ./src/pr-list.js
+
+
+
+async function pr_list_getPRs(owner, repos, totalDays, octokit) {
+  let reposList = [];
+
+  if (repos.length === 1 && repos[0] === 'all') {
+    reposList = await orgRepos.getOrgRepos(owner, octokit);
+  } else {
+    reposList = repos;
+  }
+
+  let prs = [];
+
+  for (const repo of reposList) {
+    let prList = await repoPRs.getPRs(owner, repo, totalDays, octokit);
+    prs = prs.concat(prList);
+  }
+
+  return prs;
+}
+
+const prList = {
+  getPRs: pr_list_getPRs
+}
+
 ;// CONCATENATED MODULE: ./src/comment-alert-numbers.js
 async function getNumbers(owner, prs, octokit) {
   let alertNumbers = [];
@@ -31457,22 +31484,8 @@ const commentAlertNumbers = {
 
 
 
-
 async function getAlerts(owner, repos, totalDays, octokit) {
-  let reposList = [];
-
-  if (repos.length === 1 && repos[0] === 'all') {
-    reposList = await orgRepos.getOrgRepos(owner, octokit);
-  } else {
-    reposList = repos;
-  }
-
-  let prs = [];
-
-  for (const repo of reposList) {
-    let prList = await repoPRs.getPRs(owner, repo, totalDays, octokit);
-    prs = prs.concat(prList);
-  }
+  let prs = await prList.getPRs(owner, repos, totalDays, octokit);
 
   let alerts = [];
 
@@ -31550,25 +31563,12 @@ const refAlerts = {
 
 ;// CONCATENATED MODULE: ./src/comment-alerts.js
 
-
  
 
 async function comment_alerts_getAlerts(owner, repos, totalDays, octokit) {
-  let reposList = [];
+  let prs = await prList.getPRs(owner, repos, totalDays, octokit);
 
-  if (repos.length === 1 && repos[0] === 'all') {
-    reposList = await orgRepos.getOrgRepos(owner, octokit);
-  } else {
-    reposList = repos;
-  }
-
-  let prs = [];
   let alerts = [];
-
-  for (const repo of reposList) {
-    let prList = await repoPRs.getPRs(owner, repo, totalDays, octokit);
-    prs = prs.concat(prList);
-  }
 
   for (const pr of prs) {
     const alertNumbers = await commentAlertNumbers.getNumbers(owner, [pr], octokit);

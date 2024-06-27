@@ -1,5 +1,4 @@
-import { repoPRs } from '../src/repo-prs.js';
-import { orgRepos } from '../src/org-repos.js';
+import { prList } from '../src/pr-list.js';
 import { commentAlertNumbers } from '../src/comment-alert-numbers.js';
 import { commentAlerts } from '../src/comment-alerts.js';
 import Moctokit from './support/moctokit.js';
@@ -7,7 +6,6 @@ import Moctokit from './support/moctokit.js';
 describe("Comment Alerts", function() {
   let octokit;
   let getPRsOriginal;
-  let getOrgReposOriginal;
   let getNumbersOriginal;
   let owner = 'org';
   let totalDays = 30;
@@ -35,13 +33,8 @@ describe("Comment Alerts", function() {
   beforeEach(() => {
     octokit = new Moctokit();
 
-    getPRsOriginal = repoPRs.getPRs;
-    repoPRs.getPRs = jasmine.createSpy('getPRs').and.returnValue(Promise.resolve(prData));
-
-    getOrgReposOriginal = orgRepos.getOrgRepos;
-    orgRepos.getOrgRepos = jasmine.createSpy('getOrgRepos').and.returnValue(
-      Promise.resolve([ { name: 'repo' }, { name: 'repo1' } ])
-    );
+    getPRsOriginal = prList.getPRs;
+    prList.getPRs = jasmine.createSpy('getPRs').and.returnValue(Promise.resolve(prData));
 
     getNumbersOriginal = commentAlertNumbers.getNumbers;
     commentAlertNumbers.getNumbers = jasmine.createSpy('getNumbers').and.returnValue(
@@ -51,8 +44,7 @@ describe("Comment Alerts", function() {
 
   afterEach(() => {
     // reset to original module function, so doesn't affect other tests
-    repoPRs.getPRs = getPRsOriginal;
-    orgRepos.getOrgRepos = getOrgReposOriginal;
+    prList.getPRs = getPRsOriginal;
     commentAlertNumbers.getNumbers = getNumbersOriginal;
   });
 
@@ -61,8 +53,7 @@ describe("Comment Alerts", function() {
 
     const alerts = await commentAlerts.getAlerts(owner, repos, totalDays, octokit);
 
-    expect(repoPRs.getPRs).toHaveBeenCalledWith(owner, 'repo', 30, octokit);
-    expect(repoPRs.getPRs.calls.count()).toEqual(3);
+    expect(prList.getPRs).toHaveBeenCalledWith(owner, repos, 30, octokit);
 
     expect(alerts[0].number).toEqual(43);
     expect(alerts[0].pr.repo).toEqual('repo');
@@ -73,12 +64,9 @@ describe("Comment Alerts", function() {
   });
 
   it('gets alerts from all repos in an org when repos is set to `all`', async function() {
-    let repos = [];
-
     const alerts = await commentAlerts.getAlerts(owner, ['all'], totalDays, octokit);
 
-    expect(orgRepos.getOrgRepos).toHaveBeenCalled();
-    expect(repoPRs.getPRs).toHaveBeenCalled();
+    expect(prList.getPRs).toHaveBeenCalledWith(owner, ['all'], 30, octokit);
 
     expect(alerts[0].number).toEqual(43);
     expect(alerts[0].pr.repo).toEqual('repo');
@@ -87,9 +75,7 @@ describe("Comment Alerts", function() {
   });
 
   it('sets the pr values on the alert', async function() {
-    let repos = ['repo'];
-
-    const alerts = await commentAlerts.getAlerts(owner, repos, totalDays, octokit)
+    const alerts = await commentAlerts.getAlerts(owner, ['repo'], totalDays, octokit)
 
     expect(alerts[0].number).toEqual(43);
     expect(alerts[0].pr.repo).toEqual('repo');
