@@ -31419,49 +31419,36 @@ const prList = {
 }
 
 ;// CONCATENATED MODULE: ./src/comment-alert-numbers.js
-async function getNumbers(owner, prs, octokit) {
+async function getNumbers(owner, pr, octokit) {
   let alertNumbers = [];
+  let prComments = [];
 
-  for (const pr of prs) {
-    let prComments = [];
-
-    try {
-      await octokit.paginate(
-        octokit.rest.pulls.listReviewComments,
-        {
-          owner,
-          repo: pr.repo,
-          pull_number: pr.number,
-          per_page: 100
-        },
-        (response) => {
-          prComments.push(...response.data);
-        }
-      );
-    } catch (error) {
-      throw error;
-    }
-
-    prComments = filterComments(prComments).map((comment) => ({
-      user: comment.user.login,
-      body: comment.body,
-    }));
-
-
-    prComments.forEach((comment) => {
-      let number = extractAlertNumber(comment.body);
-
-      let alertNumber = {
-        pr: pr.number,
+  try {
+    await octokit.paginate(
+      octokit.rest.pulls.listReviewComments,
+      {
+        owner,
         repo: pr.repo,
-        alertNumber: number
+        pull_number: pr.number,
+        per_page: 100
+      },
+      (response) => {
+        prComments.push(...response.data);
       }
-
-      if (number !== null) {
-        alertNumbers.push(alertNumber);
-      }
-    })
+    );
+  } catch (error) {
+    throw error;
   }
+
+  prComments = filterComments(prComments).map((comment) => ({ body: comment.body }));
+
+  prComments.forEach((comment) => {
+    let number = extractAlertNumber(comment.body);
+
+    if (number !== null) {
+      alertNumbers.push(number);
+    }
+  });
 
   return alertNumbers;
 }
@@ -31571,7 +31558,7 @@ async function comment_alerts_getAlerts(owner, repos, totalDays, octokit) {
   let alerts = [];
 
   for (const pr of prs) {
-    const alertNumbers = await commentAlertNumbers.getNumbers(owner, [pr], octokit);
+    const alertNumbers = await commentAlertNumbers.getNumbers(owner, pr, octokit);
 
     let prAlerts = [];
 
@@ -31580,7 +31567,7 @@ async function comment_alerts_getAlerts(owner, repos, totalDays, octokit) {
         const prAlert = await octokit.rest.codeScanning.getAlert({
           owner,
           repo: pr.repo,
-          alert_number: alertNumber.alertNumber
+          alert_number: alertNumber
         });
         prAlerts.push(prAlert.data);
       } catch (error) {

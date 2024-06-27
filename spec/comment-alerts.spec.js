@@ -37,9 +37,7 @@ describe("Comment Alerts", function() {
     prList.getPRs = jasmine.createSpy('getPRs').and.returnValue(Promise.resolve(prData));
 
     getNumbersOriginal = commentAlertNumbers.getNumbers;
-    commentAlertNumbers.getNumbers = jasmine.createSpy('getNumbers').and.returnValue(
-      Promise.resolve([ { pr: 'NA', repo: 'NA', alertNumber: 43 } ])
-    );
+    commentAlertNumbers.getNumbers = jasmine.createSpy('getNumbers').and.returnValue(Promise.resolve([43]));
   });
 
   afterEach(() => {
@@ -53,6 +51,8 @@ describe("Comment Alerts", function() {
 
     const alerts = await commentAlerts.getAlerts(owner, repos, totalDays, octokit);
 
+    expect(commentAlertNumbers.getNumbers).toHaveBeenCalledWith('org', prData[0], octokit);
+    expect(commentAlertNumbers.getNumbers).toHaveBeenCalledWith('org', prData[1], octokit);
     expect(prList.getPRs).toHaveBeenCalledWith(owner, repos, 30, octokit);
 
     expect(alerts[0].number).toEqual(43);

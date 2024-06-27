@@ -7,7 +7,7 @@ async function getAlerts(owner, repos, totalDays, octokit) {
   let alerts = [];
 
   for (const pr of prs) {
-    const alertNumbers = await commentAlertNumbers.getNumbers(owner, [pr], octokit);
+    const alertNumbers = await commentAlertNumbers.getNumbers(owner, pr, octokit);
 
     let prAlerts = [];
 
@@ -16,7 +16,7 @@ async function getAlerts(owner, repos, totalDays, octokit) {
         const prAlert = await octokit.rest.codeScanning.getAlert({
           owner,
           repo: pr.repo,
-          alert_number: alertNumber.alertNumber
+          alert_number: alertNumber
         });
         prAlerts.push(prAlert.data);
       } catch (error) {

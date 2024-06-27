@@ -51,7 +51,6 @@ describe("PR Alerts", function() {
     }
   ]
 
-
   beforeEach(() => {
     octokit = new Moctokit();
 
