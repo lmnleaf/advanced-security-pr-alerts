@@ -31652,15 +31652,8 @@ var external_fs_ = __nccwpck_require__(7147);
 
 
 
-async function createReport(reposInput, totalDaysInput, commentAlertsOnlyInput, path, context, octokit) {
+async function createReport(owner, repos, totalDays, commentAlertsOnly, path, octokit) {
   let alertInfo = [];
-
-  const { owner, repos, totalDays, commentAlertsOnly } = processInput(
-    reposInput,
-    totalDaysInput,
-    commentAlertsOnlyInput,
-    context
-  );
 
   try {
     const alerts = await prAlerts.getAlerts(owner, repos, totalDays, commentAlertsOnly, octokit);
@@ -31764,30 +31757,6 @@ function reportSummary (repos, alertInfo) {
   return reportSummary;
 }
 
-function processInput (repos, totalDays, commentAlertsOnly, context) {
-  let input = {
-    owner: context.repo.owner,
-    repos: [context.repo.repo],
-    totalDays: 30,
-    commentAlertsOnly: true
-  }
-
-  if (repos != null && repos.length > 0) {
-    input.repos = repos.split(',');
-  }
-
-  let days = parseInt(totalDays);
-  if (days != NaN && days > 0 && days <= 365) {
-    input.totalDays = days;
-  }
-
-  if (commentAlertsOnly != null && commentAlertsOnly === 'false' || commentAlertsOnly === false) {
-    input.commentAlertsOnly = false;
-  }
-
-  return input;
-}
-
 const alertsReport = {
   writeFile: writeFile,
   createReport: createReport
@@ -31806,12 +31775,20 @@ async function index_main() {
   try {
     const token = core.getInput('TOKEN');
     const octokit = new github.getOctokit(token);
-    const totalDays = core.getInput('total_days');
-    const repos = core.getInput('repos');
+    const totalDaysInput = core.getInput('total_days');
+    const reposInput = core.getInput('repos');
     const path = core.getInput('path');
-    const commentAlertsOnly = core.getInput('comment_alerts_only');
+    const commentAlertsOnlyInput = core.getInput('comment_alerts_only');
 
-    let reportSummary = await alertsReport.createReport(repos, totalDays, commentAlertsOnly, path, context, octokit);
+    const { owner, repos, totalDays, commentAlertsOnly } = processInput(
+      reposInput,
+      totalDaysInput,
+      commentAlertsOnlyInput,
+      context
+    );
+
+    const reportSummary = await alertsReport.createReport(owner, repos, totalDays, commentAlertsOnly, path, octokit);
+
     return core.notice(reportSummary);
   } catch (error) {
     core.setFailed(error.message);
