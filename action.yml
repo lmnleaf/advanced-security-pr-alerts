@@ -21,6 +21,10 @@ inputs:
       action will get PR code scanning alerts for the repo where it is used. When `repos` is set, include
       the repo where the action is used to get PR code scanning alerts for that repo.'
     required: false
+  comment_alerts_only:
+    description: 'Set to `true` to get only code scanning alerts in the comments on the PR. These alerts
+      will correspond to the alerts surfaced in the conversation tab of the PR in the GitHub UI. Set to
+      `false` to get all alerts on the PR `head` or `merge` branch. Defaults to `true`.'
 
 runs:
   using: 'node20'

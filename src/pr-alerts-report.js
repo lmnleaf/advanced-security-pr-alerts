@@ -1,13 +1,18 @@
 import { prAlerts } from './pr-alerts.js';
 import * as fs from 'fs';
 
-async function createReport(reposInput, totalDaysInput, path, context, octokit) {
+async function createReport(reposInput, totalDaysInput, commentAlertsOnlyInput, path, context, octokit) {
   let alertInfo = [];
 
-  const { owner, repos, totalDays } = processInput(reposInput, totalDaysInput, context);
+  const { owner, repos, totalDays, commentAlertsOnly } = processInput(
+    reposInput,
+    totalDaysInput,
+    commentAlertsOnlyInput,
+    context
+  );
 
   try {
-    const alerts = await prAlerts.getAlerts(owner, repos, totalDays, octokit);
+    const alerts = await prAlerts.getAlerts(owner, repos, totalDays, commentAlertsOnly, octokit);
 
     if (alerts.length === 0) {
       return 'No PR alerts found.';
@@ -38,6 +43,7 @@ function writeReport (alerts, path) {
     alert.rule.severity,
     alert.rule.description,
     alert.state,
+    alert.inPRComment,
     alert.most_recent_instance.state,
     alert.most_recent_instance.ref,
     alert.most_recent_instance.commit_sha,
@@ -56,8 +62,8 @@ function writeReport (alerts, path) {
     alert.pr.user,
     alert.pr.state,
     alert.pr.draft,
-    alert.pr.merged_at,
-    alert.pr.updated_at
+    alert.pr.mergedAt,
+    alert.pr.updatedAt
   ]);
 
   csvRows.unshift([
@@ -67,6 +73,7 @@ function writeReport (alerts, path) {
     'rule_severity',
     'description',
     'state',
+    'in_pr_comment',
     'most_recent_instance_state',
     'most_recent_instance_ref',
     'most_recent_commit_sha',
@@ -106,11 +113,12 @@ function reportSummary (repos, alertInfo) {
   return reportSummary;
 }
 
-function processInput (repos, totalDays, context) {
+function processInput (repos, totalDays, commentAlertsOnly, context) {
   let input = {
     owner: context.repo.owner,
     repos: [context.repo.repo],
-    totalDays: 30
+    totalDays: 30,
+    commentAlertsOnly: true
   }
 
   if (repos != null && repos.length > 0) {
@@ -120,6 +128,10 @@ function processInput (repos, totalDays, context) {
   let days = parseInt(totalDays);
   if (days != NaN && days > 0 && days <= 365) {
     input.totalDays = days;
+  }
+
+  if (commentAlertsOnly != null && commentAlertsOnly === 'false' || commentAlertsOnly === false) {
+    input.commentAlertsOnly = false;
   }
 
   return input;
