@@ -5,7 +5,7 @@ async function getAlerts(owner, repos, totalDays, commentAlertsOnly, octokit) {
   let alerts = [];
 
   try {
-    if (commentAlertsOnly) {
+    if (commentAlertsOnly === true) {
       // Note: I opted for getting alerts for comments exclusively, rather than filtering the alerts
       // from the ref to only those that are also in comments, because codebases can have hundreds (or
       // even thousands) of existing alerts that will appear on the merge or head ref, while only a

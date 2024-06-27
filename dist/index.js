@@ -31623,7 +31623,7 @@ async function pr_alerts_getAlerts(owner, repos, totalDays, commentAlertsOnly, o
   let alerts = [];
 
   try {
-    if (commentAlertsOnly) {
+    if (commentAlertsOnly === true) {
       // Note: I opted for getting alerts for comments exclusively, rather than filtering the alerts
       // from the ref to only those that are also in comments, because codebases can have hundreds (or
       // even thousands) of existing alerts that will appear on the merge or head ref, while only a
@@ -31652,10 +31652,15 @@ var external_fs_ = __nccwpck_require__(7147);
 
 
 
-async function createReport(reposInput, totalDaysInput, commentAlertsOnly, path, context, octokit) {
+async function createReport(reposInput, totalDaysInput, commentAlertsOnlyInput, path, context, octokit) {
   let alertInfo = [];
 
-  const { owner, repos, totalDays } = processInput(reposInput, totalDaysInput, context);
+  const { owner, repos, totalDays, commentAlertsOnly } = processInput(
+    reposInput,
+    totalDaysInput,
+    commentAlertsOnlyInput,
+    context
+  );
 
   try {
     const alerts = await prAlerts.getAlerts(owner, repos, totalDays, commentAlertsOnly, octokit);
@@ -31759,11 +31764,12 @@ function reportSummary (repos, alertInfo) {
   return reportSummary;
 }
 
-function processInput (repos, totalDays, context) {
+function processInput (repos, totalDays, commentAlertsOnly, context) {
   let input = {
     owner: context.repo.owner,
     repos: [context.repo.repo],
-    totalDays: 30
+    totalDays: 30,
+    commentAlertsOnly: true
   }
 
   if (repos != null && repos.length > 0) {
@@ -31773,6 +31779,10 @@ function processInput (repos, totalDays, context) {
   let days = parseInt(totalDays);
   if (days != NaN && days > 0 && days <= 365) {
     input.totalDays = days;
+  }
+
+  if (commentAlertsOnly != null && commentAlertsOnly === 'false' || commentAlertsOnly === false) {
+    input.commentAlertsOnly = false;
   }
 
   return input;

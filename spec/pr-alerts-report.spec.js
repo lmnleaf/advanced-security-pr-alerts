@@ -264,6 +264,18 @@ describe("Alerts Report", function() {
     expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', ['all'], 7, commentAlertsOnly, octokit);
   });
 
+  it('processes input when commentAlertsOnly is set to true', async function() {
+    spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
+    await alertsReport.createReport(repos, days, true, path, context, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [repos], days, true, octokit);
+  });
+
+  it('processes input when commentAlertsOnly is set to false', async function() {
+    spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
+    await alertsReport.createReport(repos, days, false, path, context, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith('org', [repos], days, false, octokit);
+  });
+
   it('handles errors', async function() {
     let repos = 'repo1,repo2';
     let caughtError;

@@ -1,10 +1,15 @@
 import { prAlerts } from './pr-alerts.js';
 import * as fs from 'fs';
 
-async function createReport(reposInput, totalDaysInput, commentAlertsOnly, path, context, octokit) {
+async function createReport(reposInput, totalDaysInput, commentAlertsOnlyInput, path, context, octokit) {
   let alertInfo = [];
 
-  const { owner, repos, totalDays } = processInput(reposInput, totalDaysInput, context);
+  const { owner, repos, totalDays, commentAlertsOnly } = processInput(
+    reposInput,
+    totalDaysInput,
+    commentAlertsOnlyInput,
+    context
+  );
 
   try {
     const alerts = await prAlerts.getAlerts(owner, repos, totalDays, commentAlertsOnly, octokit);
@@ -108,11 +113,12 @@ function reportSummary (repos, alertInfo) {
   return reportSummary;
 }
 
-function processInput (repos, totalDays, context) {
+function processInput (repos, totalDays, commentAlertsOnly, context) {
   let input = {
     owner: context.repo.owner,
     repos: [context.repo.repo],
-    totalDays: 30
+    totalDays: 30,
+    commentAlertsOnly: true
   }
 
   if (repos != null && repos.length > 0) {
@@ -122,6 +128,10 @@ function processInput (repos, totalDays, context) {
   let days = parseInt(totalDays);
   if (days != NaN && days > 0 && days <= 365) {
     input.totalDays = days;
+  }
+
+  if (commentAlertsOnly != null && commentAlertsOnly === 'false' || commentAlertsOnly === false) {
+    input.commentAlertsOnly = false;
   }
 
   return input;
