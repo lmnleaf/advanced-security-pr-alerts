@@ -31796,7 +31796,7 @@ async function index_main() {
   try {
     const token = core.getInput('TOKEN');
     const octokit = new github.getOctokit(token);
-    const totalDays = core.getInput('days');
+    const totalDays = core.getInput('total_days');
     const repos = core.getInput('repos');
     const path = core.getInput('path');
     const commentAlertsOnly = core.getInput('comment_alerts_only');
