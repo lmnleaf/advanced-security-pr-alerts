@@ -31653,30 +31653,21 @@ var external_fs_ = __nccwpck_require__(7147);
 
 
 async function createReport(owner, repos, totalDays, commentAlertsOnly, path, octokit) {
-  let alertInfo = [];
+  let alerts = [];
 
   try {
-    const alerts = await prAlerts.getAlerts(owner, repos, totalDays, commentAlertsOnly, octokit);
+    alerts = await prAlerts.getAlerts(owner, repos, totalDays, commentAlertsOnly, octokit);
 
     if (alerts.length === 0) {
       return 'No PR alerts found.';
     }
-
-    alertInfo = alerts.map((alert) => {
-      let info = {
-        repo: alert.pr.repo,
-        number: alert.number
-      }
-
-      return info;
-    });
 
     writeReport(alerts, path);
   } catch (error) {
     throw error;
   }
  
-  return reportSummary(repos, alertInfo);
+  return reportSummary(repos, alerts);
 }
 
 function writeReport (alerts, path) {
@@ -31749,8 +31740,8 @@ function writeFile (path, data, callback) {
   external_fs_.writeFile(path, data, callback);
 }
 
-function reportSummary (repos, alertInfo) {
-  let reportSummary = 'Total PR alerts found: ' + alertInfo.length.toString() + '. \n' +
+function reportSummary (repos, alerts) {
+  let reportSummary = 'Total PR alerts found: ' + alerts.length.toString() + '. \n' +
     'All org repos reviewed: ' + (repos.length === 0 ? 'true' : 'false') + '. \n' +
     'Repos reviewed: ' + (repos.length > 0 ? repos.join(', ') + '.' : 'All Org Repos.');
 
