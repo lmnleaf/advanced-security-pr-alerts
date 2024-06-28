@@ -54,6 +54,7 @@ describe("Comment Alerts", function() {
     expect(commentAlertNumbers.getNumbers).toHaveBeenCalledWith('org', prData[0], octokit);
     expect(commentAlertNumbers.getNumbers).toHaveBeenCalledWith('org', prData[1], octokit);
     expect(prList.getPRs).toHaveBeenCalledWith(owner, repos, 30, octokit);
+    expect(commentAlertNumbers.getNumbers).toHaveBeenCalledWith(owner, prData[0], octokit);
 
     expect(alerts[0].number).toEqual(43);
     expect(alerts[0].pr.repo).toEqual('repo');
@@ -67,6 +68,7 @@ describe("Comment Alerts", function() {
     const alerts = await commentAlerts.getAlerts(owner, ['all'], totalDays, octokit);
 
     expect(prList.getPRs).toHaveBeenCalledWith(owner, ['all'], 30, octokit);
+    expect(commentAlertNumbers.getNumbers).toHaveBeenCalledWith(owner, prData[0], octokit);
 
     expect(alerts[0].number).toEqual(43);
     expect(alerts[0].pr.repo).toEqual('repo');

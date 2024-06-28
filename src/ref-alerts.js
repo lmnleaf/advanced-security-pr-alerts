@@ -47,7 +47,7 @@ async function getAlerts(owner, repos, totalDays, octokit) {
 
     let inCommentNumbers = [];
     if (prAlerts.length !== 0) {
-      let inCommentAlerts = await commentAlertNumbers.getNumbers(owner, [pr], octokit);
+      let inCommentAlerts = await commentAlertNumbers.getNumbers(owner, pr, octokit);
       inCommentNumbers = inCommentAlerts.map((alert) => alert.alertNumber);
     }
 

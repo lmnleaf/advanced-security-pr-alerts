@@ -154,6 +154,7 @@ describe("PR Alerts", function() {
     expect(octokit.paginate).toHaveBeenCalled();
     expect(octokit.paginate.calls.count()).toEqual(4);
     expect(prList.getPRs).toHaveBeenCalledWith(owner, repos, 30, octokit);
+    expect(commentAlertNumbers.getNumbers).toHaveBeenCalledWith(owner, prData[0], octokit);
 
     expect(alerts[0].number).toEqual(43);
     expect(alerts[0].pr.repo).toEqual('repo');
@@ -172,6 +173,7 @@ describe("PR Alerts", function() {
     expect(octokit.paginate).toHaveBeenCalled();
     expect(octokit.paginate.calls.count()).toEqual(4);
     expect(prList.getPRs).toHaveBeenCalledWith(owner, ['all'], 30, octokit);
+    expect(commentAlertNumbers.getNumbers).toHaveBeenCalledWith(owner, prData[0], octokit);
 
     expect(alerts[0].number).toEqual(43);
     expect(alerts[0].pr.repo).toEqual('repo');
