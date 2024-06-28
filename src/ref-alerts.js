@@ -1,22 +1,8 @@
-import { repoPRs } from './repo-prs.js';
-import { orgRepos } from './org-repos.js';
+import { prList } from './pr-list.js';
 import { commentAlertNumbers } from './comment-alert-numbers.js';
 
 async function getAlerts(owner, repos, totalDays, octokit) {
-  let reposList = [];
-
-  if (repos.length === 1 && repos[0] === 'all') {
-    reposList = await orgRepos.getOrgRepos(owner, octokit);
-  } else {
-    reposList = repos;
-  }
-
-  let prs = [];
-
-  for (const repo of reposList) {
-    let prList = await repoPRs.getPRs(owner, repo, totalDays, octokit);
-    prs = prs.concat(prList);
-  }
+  let prs = await prList.getPRs(owner, repos, totalDays, octokit);
 
   let alerts = [];
 
@@ -59,10 +45,9 @@ async function getAlerts(owner, repos, totalDays, octokit) {
       }
     }
 
-    let inCommentNumbers = [];
+    let alertNumbers = [];
     if (prAlerts.length !== 0) {
-      let inCommentAlerts = await commentAlertNumbers.getNumbers(owner, [pr], octokit);
-      inCommentNumbers = inCommentAlerts.map((alert) => alert.alertNumber);
+      alertNumbers = await commentAlertNumbers.getNumbers(owner, pr, octokit);
     }
 
     prAlerts = prAlerts.map((alert) => {
@@ -76,7 +61,7 @@ async function getAlerts(owner, repos, totalDays, octokit) {
           mergedAt: pr.merged_at,
           updatedAt: pr.updated_at
         },
-        inPRComment: (inCommentNumbers.includes(alert.number) ? true : false)
+        inPRComment: (alertNumbers.includes(alert.number) ? true : false)
       };
 
       return newAlert;

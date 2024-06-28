@@ -1,26 +1,13 @@
-import { repoPRs } from './repo-prs.js';
-import { orgRepos } from './org-repos.js';
+import { prList } from './pr-list.js';
 import { commentAlertNumbers } from './comment-alert-numbers.js'; 
 
 async function getAlerts(owner, repos, totalDays, octokit) {
-  let reposList = [];
+  let prs = await prList.getPRs(owner, repos, totalDays, octokit);
 
-  if (repos.length === 1 && repos[0] === 'all') {
-    reposList = await orgRepos.getOrgRepos(owner, octokit);
-  } else {
-    reposList = repos;
-  }
-
-  let prs = [];
   let alerts = [];
 
-  for (const repo of reposList) {
-    let prList = await repoPRs.getPRs(owner, repo, totalDays, octokit);
-    prs = prs.concat(prList);
-  }
-
   for (const pr of prs) {
-    const alertNumbers = await commentAlertNumbers.getNumbers(owner, [pr], octokit);
+    const alertNumbers = await commentAlertNumbers.getNumbers(owner, pr, octokit);
 
     let prAlerts = [];
 
@@ -29,7 +16,7 @@ async function getAlerts(owner, repos, totalDays, octokit) {
         const prAlert = await octokit.rest.codeScanning.getAlert({
           owner,
           repo: pr.repo,
-          alert_number: alertNumber.alertNumber
+          alert_number: alertNumber
         });
         prAlerts.push(prAlert.data);
       } catch (error) {

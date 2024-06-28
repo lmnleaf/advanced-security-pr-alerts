@@ -1,38 +1,22 @@
 import { prAlerts } from './pr-alerts.js';
 import * as fs from 'fs';
 
-async function createReport(reposInput, totalDaysInput, commentAlertsOnlyInput, path, context, octokit) {
-  let alertInfo = [];
-
-  const { owner, repos, totalDays, commentAlertsOnly } = processInput(
-    reposInput,
-    totalDaysInput,
-    commentAlertsOnlyInput,
-    context
-  );
+async function createReport(owner, repos, totalDays, includeRefAlerts, path, octokit) {
+  let alerts = [];
 
   try {
-    const alerts = await prAlerts.getAlerts(owner, repos, totalDays, commentAlertsOnly, octokit);
+    alerts = await prAlerts.getAlerts(owner, repos, totalDays, includeRefAlerts, octokit);
 
     if (alerts.length === 0) {
       return 'No PR alerts found.';
     }
-
-    alertInfo = alerts.map((alert) => {
-      let info = {
-        repo: alert.pr.repo,
-        number: alert.number
-      }
-
-      return info;
-    });
 
     writeReport(alerts, path);
   } catch (error) {
     throw error;
   }
  
-  return reportSummary(repos, alertInfo);
+  return reportSummary(repos, alerts);
 }
 
 function writeReport (alerts, path) {
@@ -43,7 +27,14 @@ function writeReport (alerts, path) {
     alert.rule.severity,
     alert.rule.description,
     alert.state,
+    alert.pr.repo,
     alert.inPRComment,
+    alert.pr.number,
+    alert.pr.user,
+    alert.pr.state,
+    alert.pr.draft,
+    alert.pr.mergedAt,
+    alert.pr.updatedAt,
     alert.most_recent_instance.state,
     alert.most_recent_instance.ref,
     alert.most_recent_instance.commit_sha,
@@ -56,14 +47,7 @@ function writeReport (alerts, path) {
     alert.dismissed_reason,
     alert.dismissed_comment,
     alert.created_at,
-    alert.updated_at,
-    alert.pr.repo,
-    alert.pr.number,
-    alert.pr.user,
-    alert.pr.state,
-    alert.pr.draft,
-    alert.pr.mergedAt,
-    alert.pr.updatedAt
+    alert.updated_at
   ]);
 
   csvRows.unshift([
@@ -73,7 +57,14 @@ function writeReport (alerts, path) {
     'rule_severity',
     'description',
     'state',
+    'repo',
     'in_pr_comment',
+    'pr_number',
+    'pr_user',
+    'pr_state',
+    'pr_draft',
+    'pr_merged_at',
+    'pr_updated_at',
     'most_recent_instance_state',
     'most_recent_instance_ref',
     'most_recent_commit_sha',
@@ -86,14 +77,7 @@ function writeReport (alerts, path) {
     'dismissed_reason',
     'dismissed_comment',
     'created_at',
-    'updated_at',
-    'repo',
-    'pr_number',
-    'pr_user',
-    'pr_state',
-    'pr_draft',
-    'pr_merged_at',
-    'pr_updated_at'
+    'updated_at'
   ]);
 
   alertsReport.writeFile(path + '/pr-alerts-report.csv', csvRows.join("\r\n"), (error) => {
@@ -105,36 +89,12 @@ function writeFile (path, data, callback) {
   fs.writeFile(path, data, callback);
 }
 
-function reportSummary (repos, alertInfo) {
-  let reportSummary = 'Total PR alerts found: ' + alertInfo.length.toString() + '. \n' +
-    'All org repos reviewed: ' + (repos.length === 0 ? 'true' : 'false') + '. \n' +
+function reportSummary (repos, alerts) {
+  let reportSummary = 'Total PR alerts found: ' + alerts.length.toString() + '. \n' +
+    'All org repos reviewed: ' + (repos.length === 1 && repos[0] === 'all' ? 'true' : 'false') + '. \n' +
     'Repos reviewed: ' + (repos.length > 0 ? repos.join(', ') + '.' : 'All Org Repos.');
 
   return reportSummary;
-}
-
-function processInput (repos, totalDays, commentAlertsOnly, context) {
-  let input = {
-    owner: context.repo.owner,
-    repos: [context.repo.repo],
-    totalDays: 30,
-    commentAlertsOnly: true
-  }
-
-  if (repos != null && repos.length > 0) {
-    input.repos = repos.split(',');
-  }
-
-  let days = parseInt(totalDays);
-  if (days != NaN && days > 0 && days <= 365) {
-    input.totalDays = days;
-  }
-
-  if (commentAlertsOnly != null && commentAlertsOnly === 'false' || commentAlertsOnly === false) {
-    input.commentAlertsOnly = false;
-  }
-
-  return input;
 }
 
 export const alertsReport = {

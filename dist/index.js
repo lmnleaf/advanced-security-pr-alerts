@@ -31391,50 +31391,64 @@ const orgRepos = {
   getOrgRepos: getOrgRepos
 }
 
-;// CONCATENATED MODULE: ./src/comment-alert-numbers.js
-async function getNumbers(owner, prs, octokit) {
-  let alertNumbers = [];
-
-  for (const pr of prs) {
-    let prComments = [];
-
-    try {
-      await octokit.paginate(
-        octokit.rest.pulls.listReviewComments,
-        {
-          owner,
-          repo: pr.repo,
-          pull_number: pr.number,
-          per_page: 100
-        },
-        (response) => {
-          prComments.push(...response.data);
-        }
-      );
-    } catch (error) {
-      throw error;
-    }
-
-    prComments = filterComments(prComments).map((comment) => ({
-      user: comment.user.login,
-      body: comment.body,
-    }));
+;// CONCATENATED MODULE: ./src/pr-list.js
 
 
-    prComments.forEach((comment) => {
-      let number = extractAlertNumber(comment.body);
 
-      let alertNumber = {
-        pr: pr.number,
-        repo: pr.repo,
-        alertNumber: number
-      }
+async function pr_list_getPRs(owner, repos, totalDays, octokit) {
+  let reposList = [];
 
-      if (number !== null) {
-        alertNumbers.push(alertNumber);
-      }
-    })
+  if (repos.length === 1 && repos[0] === 'all') {
+    reposList = await orgRepos.getOrgRepos(owner, octokit);
+  } else {
+    reposList = repos;
   }
+
+  let prs = [];
+
+  for (const repo of reposList) {
+    let prList = await repoPRs.getPRs(owner, repo, totalDays, octokit);
+    prs = prs.concat(prList);
+  }
+
+  return prs;
+}
+
+const prList = {
+  getPRs: pr_list_getPRs
+}
+
+;// CONCATENATED MODULE: ./src/comment-alert-numbers.js
+async function getNumbers(owner, pr, octokit) {
+  let alertNumbers = [];
+  let prComments = [];
+
+  try {
+    await octokit.paginate(
+      octokit.rest.pulls.listReviewComments,
+      {
+        owner,
+        repo: pr.repo,
+        pull_number: pr.number,
+        per_page: 100
+      },
+      (response) => {
+        prComments.push(...response.data);
+      }
+    );
+  } catch (error) {
+    throw error;
+  }
+
+  prComments = filterComments(prComments).map((comment) => ({ body: comment.body }));
+
+  prComments.forEach((comment) => {
+    let number = extractAlertNumber(comment.body);
+
+    if (number !== null) {
+      alertNumbers.push(number);
+    }
+  });
 
   return alertNumbers;
 }
@@ -31457,22 +31471,8 @@ const commentAlertNumbers = {
 
 
 
-
 async function getAlerts(owner, repos, totalDays, octokit) {
-  let reposList = [];
-
-  if (repos.length === 1 && repos[0] === 'all') {
-    reposList = await orgRepos.getOrgRepos(owner, octokit);
-  } else {
-    reposList = repos;
-  }
-
-  let prs = [];
-
-  for (const repo of reposList) {
-    let prList = await repoPRs.getPRs(owner, repo, totalDays, octokit);
-    prs = prs.concat(prList);
-  }
+  let prs = await prList.getPRs(owner, repos, totalDays, octokit);
 
   let alerts = [];
 
@@ -31515,10 +31515,9 @@ async function getAlerts(owner, repos, totalDays, octokit) {
       }
     }
 
-    let inCommentNumbers = [];
+    let alertNumbers = [];
     if (prAlerts.length !== 0) {
-      let inCommentAlerts = await commentAlertNumbers.getNumbers(owner, [pr], octokit);
-      inCommentNumbers = inCommentAlerts.map((alert) => alert.alertNumber);
+      alertNumbers = await commentAlertNumbers.getNumbers(owner, pr, octokit);
     }
 
     prAlerts = prAlerts.map((alert) => {
@@ -31532,7 +31531,7 @@ async function getAlerts(owner, repos, totalDays, octokit) {
           mergedAt: pr.merged_at,
           updatedAt: pr.updated_at
         },
-        inPRComment: (inCommentNumbers.includes(alert.number) ? true : false)
+        inPRComment: (alertNumbers.includes(alert.number) ? true : false)
       };
 
       return newAlert;
@@ -31550,28 +31549,15 @@ const refAlerts = {
 
 ;// CONCATENATED MODULE: ./src/comment-alerts.js
 
-
  
 
 async function comment_alerts_getAlerts(owner, repos, totalDays, octokit) {
-  let reposList = [];
+  let prs = await prList.getPRs(owner, repos, totalDays, octokit);
 
-  if (repos.length === 1 && repos[0] === 'all') {
-    reposList = await orgRepos.getOrgRepos(owner, octokit);
-  } else {
-    reposList = repos;
-  }
-
-  let prs = [];
   let alerts = [];
 
-  for (const repo of reposList) {
-    let prList = await repoPRs.getPRs(owner, repo, totalDays, octokit);
-    prs = prs.concat(prList);
-  }
-
   for (const pr of prs) {
-    const alertNumbers = await commentAlertNumbers.getNumbers(owner, [pr], octokit);
+    const alertNumbers = await commentAlertNumbers.getNumbers(owner, pr, octokit);
 
     let prAlerts = [];
 
@@ -31580,7 +31566,7 @@ async function comment_alerts_getAlerts(owner, repos, totalDays, octokit) {
         const prAlert = await octokit.rest.codeScanning.getAlert({
           owner,
           repo: pr.repo,
-          alert_number: alertNumber.alertNumber
+          alert_number: alertNumber
         });
         prAlerts.push(prAlert.data);
       } catch (error) {
@@ -31619,21 +31605,21 @@ const commentAlerts = {
 
 
 
-async function pr_alerts_getAlerts(owner, repos, totalDays, commentAlertsOnly, octokit) {
+async function pr_alerts_getAlerts(owner, repos, totalDays, includeRefAlerts, octokit) {
   let alerts = [];
 
   try {
-    if (commentAlertsOnly === true) {
-      // Note: I opted for getting alerts for comments exclusively, rather than filtering the alerts
-      // from the ref to only those that are also in comments, because codebases can have hundreds (or
-      // even thousands) of existing alerts that will appear on the merge or head ref, while only a
-      // couple alerts are actually surfaced on any of the PRs at any given time, so, in many cases,
-      // this approach will actually require fewer requests to the API that the alternative approach.
+    if (includeRefAlerts === true) {
+      console.log('Include Ref Alerts');
+      alerts = await refAlerts.getAlerts(owner, repos, totalDays, octokit);
+    } else {
+      // Note: I opted to get alerts for comments individually, rather than filtering the alerts
+      // in the ref to only those that are also in the comments, because codebases can have hundreds
+      // (or even thousands) of existing alerts that will appear on the merge or head ref, while only
+      // a couple alerts may actually be surfaced on the PRs at any given time, so, in many cases,
+      // this approach will require fewer requests to the API than the alternative approach.
       console.log('Comment Alerts Only');
       alerts = await commentAlerts.getAlerts(owner, repos, totalDays, octokit);
-    } else {
-      console.log('Ref Alerts');
-      alerts = await refAlerts.getAlerts(owner, repos, totalDays, octokit);
     }
   } catch (error) {
     throw error;
@@ -31652,38 +31638,22 @@ var external_fs_ = __nccwpck_require__(7147);
 
 
 
-async function createReport(reposInput, totalDaysInput, commentAlertsOnlyInput, path, context, octokit) {
-  let alertInfo = [];
-
-  const { owner, repos, totalDays, commentAlertsOnly } = processInput(
-    reposInput,
-    totalDaysInput,
-    commentAlertsOnlyInput,
-    context
-  );
+async function createReport(owner, repos, totalDays, includeRefAlerts, path, octokit) {
+  let alerts = [];
 
   try {
-    const alerts = await prAlerts.getAlerts(owner, repos, totalDays, commentAlertsOnly, octokit);
+    alerts = await prAlerts.getAlerts(owner, repos, totalDays, includeRefAlerts, octokit);
 
     if (alerts.length === 0) {
       return 'No PR alerts found.';
     }
-
-    alertInfo = alerts.map((alert) => {
-      let info = {
-        repo: alert.pr.repo,
-        number: alert.number
-      }
-
-      return info;
-    });
 
     writeReport(alerts, path);
   } catch (error) {
     throw error;
   }
  
-  return reportSummary(repos, alertInfo);
+  return reportSummary(repos, alerts);
 }
 
 function writeReport (alerts, path) {
@@ -31694,7 +31664,14 @@ function writeReport (alerts, path) {
     alert.rule.severity,
     alert.rule.description,
     alert.state,
+    alert.pr.repo,
     alert.inPRComment,
+    alert.pr.number,
+    alert.pr.user,
+    alert.pr.state,
+    alert.pr.draft,
+    alert.pr.mergedAt,
+    alert.pr.updatedAt,
     alert.most_recent_instance.state,
     alert.most_recent_instance.ref,
     alert.most_recent_instance.commit_sha,
@@ -31707,14 +31684,7 @@ function writeReport (alerts, path) {
     alert.dismissed_reason,
     alert.dismissed_comment,
     alert.created_at,
-    alert.updated_at,
-    alert.pr.repo,
-    alert.pr.number,
-    alert.pr.user,
-    alert.pr.state,
-    alert.pr.draft,
-    alert.pr.mergedAt,
-    alert.pr.updatedAt
+    alert.updated_at
   ]);
 
   csvRows.unshift([
@@ -31724,7 +31694,14 @@ function writeReport (alerts, path) {
     'rule_severity',
     'description',
     'state',
+    'repo',
     'in_pr_comment',
+    'pr_number',
+    'pr_user',
+    'pr_state',
+    'pr_draft',
+    'pr_merged_at',
+    'pr_updated_at',
     'most_recent_instance_state',
     'most_recent_instance_ref',
     'most_recent_commit_sha',
@@ -31737,14 +31714,7 @@ function writeReport (alerts, path) {
     'dismissed_reason',
     'dismissed_comment',
     'created_at',
-    'updated_at',
-    'repo',
-    'pr_number',
-    'pr_user',
-    'pr_state',
-    'pr_draft',
-    'pr_merged_at',
-    'pr_updated_at'
+    'updated_at'
   ]);
 
   alertsReport.writeFile(path + '/pr-alerts-report.csv', csvRows.join("\r\n"), (error) => {
@@ -31756,20 +31726,26 @@ function writeFile (path, data, callback) {
   external_fs_.writeFile(path, data, callback);
 }
 
-function reportSummary (repos, alertInfo) {
-  let reportSummary = 'Total PR alerts found: ' + alertInfo.length.toString() + '. \n' +
-    'All org repos reviewed: ' + (repos.length === 0 ? 'true' : 'false') + '. \n' +
+function reportSummary (repos, alerts) {
+  let reportSummary = 'Total PR alerts found: ' + alerts.length.toString() + '. \n' +
+    'All org repos reviewed: ' + (repos.length === 1 && repos[0] === 'all' ? 'true' : 'false') + '. \n' +
     'Repos reviewed: ' + (repos.length > 0 ? repos.join(', ') + '.' : 'All Org Repos.');
 
   return reportSummary;
 }
 
-function processInput (repos, totalDays, commentAlertsOnly, context) {
+const alertsReport = {
+  writeFile: writeFile,
+  createReport: createReport
+}
+
+;// CONCATENATED MODULE: ./src/process-input.js
+function processInput (repos, totalDays, includeRefAlerts, context) {
   let input = {
     owner: context.repo.owner,
     repos: [context.repo.repo],
     totalDays: 30,
-    commentAlertsOnly: true
+    includeRefAlerts: false
   }
 
   if (repos != null && repos.length > 0) {
@@ -31779,21 +31755,23 @@ function processInput (repos, totalDays, commentAlertsOnly, context) {
   let days = parseInt(totalDays);
   if (days != NaN && days > 0 && days <= 365) {
     input.totalDays = days;
+  } else if (days != NaN && (days <= 0 || days > 365)) {
+    throw new Error('total_days must be greater than 0 and less than or equal to 365.');
   }
 
-  if (commentAlertsOnly != null && commentAlertsOnly === 'false' || commentAlertsOnly === false) {
-    input.commentAlertsOnly = false;
+  if (includeRefAlerts === 'true' || includeRefAlerts === true) {
+    input.includeRefAlerts = true;
+  } else if (includeRefAlerts != null && includeRefAlerts != 'false' && includeRefAlerts != false) {
+    throw new Error('include_ref_alerts must be true or false.');
   }
 
   return input;
 }
 
-const alertsReport = {
-  writeFile: writeFile,
-  createReport: createReport
-}
+
 
 ;// CONCATENATED MODULE: ./index.js
+
 
 
 
@@ -31806,12 +31784,20 @@ async function index_main() {
   try {
     const token = core.getInput('TOKEN');
     const octokit = new github.getOctokit(token);
-    const totalDays = core.getInput('total_days');
-    const repos = core.getInput('repos');
+    const totalDaysInput = core.getInput('total_days');
+    const reposInput = core.getInput('repos');
     const path = core.getInput('path');
-    const commentAlertsOnly = core.getInput('comment_alerts_only');
+    const includeRefAlertsInput = core.getInput('include_ref_alerts');
 
-    let reportSummary = await alertsReport.createReport(repos, totalDays, commentAlertsOnly, path, context, octokit);
+    const { owner, repos, totalDays, includeRefAlerts } = processInput(
+      reposInput,
+      totalDaysInput,
+      includeRefAlertsInput,
+      context
+    );
+
+    const reportSummary = await alertsReport.createReport(owner, repos, totalDays, includeRefAlerts, path, octokit);
+
     return core.notice(reportSummary);
   } catch (error) {
     core.setFailed(error.message);

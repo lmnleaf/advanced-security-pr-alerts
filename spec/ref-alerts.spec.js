@@ -1,16 +1,34 @@
-import { repoPRs } from '../src/repo-prs.js';
-import { orgRepos } from '../src/org-repos.js';
+import { prList } from '../src/pr-list.js';
 import { commentAlertNumbers } from '../src/comment-alert-numbers.js';
 import { refAlerts } from '../src/ref-alerts.js';
 import Moctokit from './support/moctokit.js';
 
 describe("PR Alerts", function() {
   let octokit;
-  let getPRsOriginal;
-  let getOrgReposOriginal;
   let getNumbersOriginal;
+  let prListOriginal;
   let owner = 'org';
   let totalDays = 30;
+  let prData = [
+    {
+      repo: 'repo',
+      number: 10,
+      user: 'cool',
+      state: 'closed',
+      draft: false,
+      merged_at: '2023-04-01T12:00:00Z',
+      updated_at: '2023-04-02T12:00:00Z'
+    },
+    {
+      repo: 'repo1',
+      number: 9,
+      user: 'wow',
+      state: 'open',
+      draft: false,
+      merged_at: null,
+      updated_at: '2023-04-02T12:00:00Z'
+    }
+  ];
   let mockData = [
     {
       number: 43,
@@ -111,69 +129,16 @@ describe("PR Alerts", function() {
     // https://javascript.plainenglish.io/unit-testing-challenges-with-modulary-javascript-patterns
     // It was a huge help in understanding why I was having trouble testing the code and some
     // options for dealing with the challenges.
-    getPRsOriginal = repoPRs.getPRs;
-    repoPRs.getPRs = jasmine.createSpy('getPRs').and.returnValue(
-      Promise.resolve([
-        {
-          repo: 'repo',
-          number: 10,
-          user: 'cool',
-          state: 'closed',
-          draft: false,
-          merged_at: '2023-04-01T12:00:00Z',
-          updated_at: '2023-04-02T12:00:00Z'
-        },
-        {
-          repo: 'repo1',
-          number: 9,
-          user: 'wow',
-          state: 'open',
-          draft: false,
-          merged_at: null,
-          updated_at: '2023-04-02T12:00:00Z'
-        },
-        {
-          repo: 'repo2',
-          number: 8,
-          user: 'yip',
-          state: 'open',
-          draft: true,
-          merged_at: null,
-          updated_at: '2023-04-02T12:00:00Z'
-        }
-      ])
-    );
-
-    getOrgReposOriginal = orgRepos.getOrgRepos;
-    orgRepos.getOrgRepos = jasmine.createSpy('getOrgRepos').and.returnValue(
-      Promise.resolve([
-        {
-          name: 'repo',
-          type: 'private'
-        },
-        {
-          name: 'repo1',
-          type: 'public'
-        },
-        {
-          name: 'repo2',
-          type: 'internal'
-        }
-      ])
-    );
+    prListOriginal = prList.getPRs;
+    prList.getPRs = jasmine.createSpy('getPRs').and.returnValue(Promise.resolve(prData));
 
     getNumbersOriginal = commentAlertNumbers.getNumbers;
-    commentAlertNumbers.getNumbers = jasmine.createSpy('getNumbers').and.returnValue(
-      Promise.resolve([
-        { pr: 'NA', repo: 'NA', alertNumber: 43 },
-      ])
-    );
+    commentAlertNumbers.getNumbers = jasmine.createSpy('getNumbers').and.returnValue(Promise.resolve([43]));
   });
 
   afterEach(() => {
     // reset to original module function, so doesn't affect other tests
-    repoPRs.getPRs = getPRsOriginal;
-    orgRepos.getOrgRepos = getOrgReposOriginal;
+    prList.getPRs = prListOriginal;
     commentAlertNumbers.getNumbers = getNumbersOriginal;
   });
 
@@ -185,8 +150,9 @@ describe("PR Alerts", function() {
     // TO DO: this is not very well tested. Would like to test the arguments
     // passed to paginate.
     expect(octokit.paginate).toHaveBeenCalled();
-    expect(octokit.paginate.calls.count()).toEqual(18);
-    expect(repoPRs.getPRs).toHaveBeenCalledWith(owner, 'repo', 30, octokit);
+    expect(octokit.paginate.calls.count()).toEqual(4);
+    expect(prList.getPRs).toHaveBeenCalledWith(owner, repos, 30, octokit);
+    expect(commentAlertNumbers.getNumbers).toHaveBeenCalledWith(owner, prData[0], octokit);
 
     expect(alerts[0].number).toEqual(43);
     expect(alerts[0].pr.repo).toEqual('repo');
@@ -200,14 +166,12 @@ describe("PR Alerts", function() {
   });
 
   it('gets alerts from all repos in an org when repos is set to `all`', async function() {
-    let repos = [];
-
     const alerts = await refAlerts.getAlerts(owner, ['all'], totalDays, octokit);
 
     expect(octokit.paginate).toHaveBeenCalled();
-    expect(octokit.paginate.calls.count()).toEqual(18);
-    expect(orgRepos.getOrgRepos).toHaveBeenCalled();
-    expect(repoPRs.getPRs).toHaveBeenCalled();
+    expect(octokit.paginate.calls.count()).toEqual(4);
+    expect(prList.getPRs).toHaveBeenCalledWith(owner, ['all'], 30, octokit);
+    expect(commentAlertNumbers.getNumbers).toHaveBeenCalledWith(owner, prData[0], octokit);
 
     expect(alerts[0].number).toEqual(43);
     expect(alerts[0].pr.repo).toEqual('repo');

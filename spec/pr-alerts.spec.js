@@ -51,7 +51,6 @@ describe("PR Alerts", function() {
     }
   ]
 
-
   beforeEach(() => {
     octokit = new Moctokit();
 
@@ -68,16 +67,24 @@ describe("PR Alerts", function() {
     commentAlerts.getAlerts = getCommentAlertsOriginal;
   });
 
-  it ('gets ref alerts when commentAlertsOnly is false', async function() {
-    const alerts = await prAlerts.getAlerts(owner, repos, totalDays, false, octokit);
+  it ('gets ref alerts when includeRefAlerts is true', async function() {
+    const alerts = await prAlerts.getAlerts(owner, repos, totalDays, true, octokit);
 
     expect(refAlerts.getAlerts).toHaveBeenCalledWith(owner, repos, totalDays, octokit);
     expect(alerts[0].number).toEqual(41);
     expect(alerts[0].pr.repo).toEqual('repo');
   });
 
-  it('gets comment alerts when commentAlertsOnly is true', async function() {
-    const alerts = await prAlerts.getAlerts(owner, repos, totalDays, true, octokit);
+  it('gets only comment alerts when includeRefAlerts is false', async function() {
+    const alerts = await prAlerts.getAlerts(owner, repos, totalDays, false, octokit);
+
+    expect(commentAlerts.getAlerts).toHaveBeenCalledWith(owner, repos, totalDays, octokit);
+    expect(alerts[0].number).toEqual(41);
+    expect(alerts[0].pr.repo).toEqual('repo');
+  });
+
+  it('gets only comment alerts when includeRefAlerts is null', async function() {
+    const alerts = await prAlerts.getAlerts(owner, repos, totalDays, null, octokit);
 
     expect(commentAlerts.getAlerts).toHaveBeenCalledWith(owner, repos, totalDays, octokit);
     expect(alerts[0].number).toEqual(41);
@@ -85,13 +92,11 @@ describe("PR Alerts", function() {
   });
 
   it('handles errors', async function() {
-    refAlerts.getAlerts = jasmine.createSpy('getAlerts').and.returnValue(
-      Promise.reject(new Error('fetch error'))
-    );
+    commentAlerts.getAlerts = jasmine.createSpy('getAlerts').and.returnValue(Promise.reject(new Error('fetch error')));
     let caughtError;
 
     try {
-      await prAlerts.getAlerts(owner, repos, totalDays, false, octokit);
+      await prAlerts.getAlerts(owner, repos, totalDays, null, octokit);
     } catch (error) {
       caughtError = error;
     }
