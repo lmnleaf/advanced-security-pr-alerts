@@ -133,9 +133,7 @@ describe("PR Alerts", function() {
     prList.getPRs = jasmine.createSpy('getPRs').and.returnValue(Promise.resolve(prData));
 
     getNumbersOriginal = commentAlertNumbers.getNumbers;
-    commentAlertNumbers.getNumbers = jasmine.createSpy('getNumbers').and.returnValue(
-      Promise.resolve([ { pr: 'NA', repo: 'NA', alertNumber: 43 }, ])
-    );
+    commentAlertNumbers.getNumbers = jasmine.createSpy('getNumbers').and.returnValue(Promise.resolve([43]));
   });
 
   afterEach(() => {

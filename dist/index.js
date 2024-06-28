@@ -31515,10 +31515,9 @@ async function getAlerts(owner, repos, totalDays, octokit) {
       }
     }
 
-    let inCommentNumbers = [];
+    let alertNumbers = [];
     if (prAlerts.length !== 0) {
-      let inCommentAlerts = await commentAlertNumbers.getNumbers(owner, pr, octokit);
-      inCommentNumbers = inCommentAlerts.map((alert) => alert.alertNumber);
+      alertNumbers = await commentAlertNumbers.getNumbers(owner, pr, octokit);
     }
 
     prAlerts = prAlerts.map((alert) => {
@@ -31532,7 +31531,7 @@ async function getAlerts(owner, repos, totalDays, octokit) {
           mergedAt: pr.merged_at,
           updatedAt: pr.updated_at
         },
-        inPRComment: (inCommentNumbers.includes(alert.number) ? true : false)
+        inPRComment: (alertNumbers.includes(alert.number) ? true : false)
       };
 
       return newAlert;
