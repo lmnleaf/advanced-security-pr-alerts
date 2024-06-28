@@ -13,7 +13,7 @@ Background Info:
 
 <br>
 
-:sparkles: **Configuration Details**
+:star: **Configuration Details**
 * Required input:
   * `TOKEN` - GITHUB_TOKEN or PAT. A PAT is required to get PR alerts for repos other than the repo where the action is used.
   * `path` - the path where the CSV should be written. Note: to upload the CSV as an artifact, use GitHub's [upload-artifact](https://github.com/actions/upload-artifact) action.
