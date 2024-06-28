@@ -7,8 +7,8 @@ describe("Alerts Report", function() {
   let getAlertsOriginal;
   let owner = 'org';
   let repos = [ 'repo' ];
-  let totalDays = 30;
-  let commentAlertsOnly = true;
+  let totalDays = null;
+  let includeRefAlerts = null;
   let path = '/home/runner/work/this-repo/this-repo';
   let mockData = [
     {
@@ -148,9 +148,9 @@ describe("Alerts Report", function() {
  it ('creates a CSV of alerts', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve(mockData));
 
-    await alertsReport.createReport(owner, repos, totalDays, commentAlertsOnly, path, octokit);
+    await alertsReport.createReport(owner, repos, totalDays, includeRefAlerts, path, octokit);
 
-    expect(prAlerts.getAlerts).toHaveBeenCalledWith(owner, repos, totalDays, commentAlertsOnly, octokit);
+    expect(prAlerts.getAlerts).toHaveBeenCalledWith(owner, repos, totalDays, includeRefAlerts, octokit);
     expect(alertsReport.writeFile).toHaveBeenCalled();
 
     const args = alertsReport.writeFile.calls.mostRecent().args;
@@ -206,7 +206,7 @@ describe("Alerts Report", function() {
   it ('returns a report summary', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve(mockData));
 
-    const reportSummary= await alertsReport.createReport(owner, repos, totalDays, commentAlertsOnly, path, octokit);
+    const reportSummary= await alertsReport.createReport(owner, repos, totalDays, includeRefAlerts, path, octokit);
 
     expect(reportSummary).toEqual(
       'Total PR alerts found: 3. \n' +
@@ -217,7 +217,7 @@ describe("Alerts Report", function() {
 
   it('returns a report summary when there are no PR alerts', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
-    const reportSummary= await alertsReport.createReport(owner, repos, totalDays, commentAlertsOnly, path, octokit);
+    const reportSummary= await alertsReport.createReport(owner, repos, totalDays, includeRefAlerts, path, octokit);
 
     expect(reportSummary).toEqual(
       'No PR alerts found.'
@@ -230,7 +230,7 @@ describe("Alerts Report", function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.reject(new Error('fetch error')));
 
     try {
-      await alertsReport.createReport(owner, repos, null, commentAlertsOnly, path, octokit);
+      await alertsReport.createReport(owner, repos, null, includeRefAlerts, path, octokit);
     } catch (error) {
       caughtError = error;
     }

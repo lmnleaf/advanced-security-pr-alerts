@@ -6,7 +6,7 @@ describe("Process Input", function() {
   let repos = 'repo1,repo2';
   let totalDays = 30;
   let path = 'path/to/file';
-  let commentAlertsOnly = true;
+  let includeRefAlerts = true;
   let octokit;
 
   beforeEach(function() {
@@ -18,7 +18,7 @@ describe("Process Input", function() {
     expect(input.owner).toEqual('org');
     expect(input.repos).toEqual(['cool-repo']);
     expect(input.totalDays).toEqual(30);
-    expect(input.commentAlertsOnly).toEqual(true);
+    expect(input.includeRefAlerts).toEqual(false);
   });
 
   it('processes input when repos and days are empty strings (defaults to current repo and 30 days)', async function() {
@@ -26,7 +26,7 @@ describe("Process Input", function() {
     expect(input.owner).toEqual('org');
     expect(input.repos).toEqual(['cool-repo']);
     expect(input.totalDays).toEqual(30);
-    expect(input.commentAlertsOnly).toEqual(true);
+    expect(input.includeRefAlerts).toEqual(false);
   });
 
   it('processes input when repos and days are provided', async function() {
@@ -34,7 +34,7 @@ describe("Process Input", function() {
     expect(input.owner).toEqual(context.repo.owner);
     expect(input.repos).toEqual(['woot', 'cool']);
     expect(input.totalDays).toEqual(10);
-    expect(input.commentAlertsOnly).toEqual(true);
+    expect(input.includeRefAlerts).toEqual(false);
   });
 
   it('processes input when repos is set to `all`', async function() {
@@ -42,23 +42,23 @@ describe("Process Input", function() {
     expect(input.owner).toEqual(context.repo.owner);
     expect(input.repos).toEqual(['all']);
     expect(input.totalDays).toEqual(totalDays);
-    expect(input.commentAlertsOnly).toEqual(commentAlertsOnly);
+    expect(input.includeRefAlerts).toEqual(false);
   });
 
-  it('processes input when commentAlertsOnly is set to true', async function() {
+  it('processes input when includeRefAlerts is set to true', async function() {
     const input = processInput(null, null, true, context);
     expect(input.owner).toEqual(context.repo.owner);
     expect(input.repos).toEqual([context.repo.repo]);
     expect(input.totalDays).toEqual(totalDays);
-    expect(input.commentAlertsOnly).toEqual(true);
+    expect(input.includeRefAlerts).toEqual(true);
   });
 
-  it('processes input when commentAlertsOnly is set to false', async function() {
+  it('processes input when includeRefAlerts is set to false', async function() {
     const input = processInput(null, null, false, context);
     expect(input.owner).toEqual(context.repo.owner);
     expect(input.repos).toEqual([context.repo.repo]);
     expect(input.totalDays).toEqual(totalDays);
-    expect(input.commentAlertsOnly).toEqual(false);
+    expect(input.includeRefAlerts).toEqual(false);
   });
 
   it('processes input when days is set to greater than 365 (defaults to 30 days)', async function() {
@@ -83,9 +83,9 @@ describe("Process Input", function() {
     }
   });
 
-  it('throws an error when commentAlertsOnly is set to something other than true or false', async function() {
+  it('throws an error when includeRefAlerts is set to something other than true or false', async function() {
     let caughtError;
-    let expectedError = new Error('comment_alerts_only must be true or false.');
+    let expectedError = new Error('include_ref_alerts must be true or false.');
 
     try {
       processInput(null, null, 'woot', context);

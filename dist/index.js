@@ -31606,21 +31606,21 @@ const commentAlerts = {
 
 
 
-async function pr_alerts_getAlerts(owner, repos, totalDays, commentAlertsOnly, octokit) {
+async function pr_alerts_getAlerts(owner, repos, totalDays, includeRefAlerts, octokit) {
   let alerts = [];
 
   try {
-    if (commentAlertsOnly === true) {
-      // Note: I opted for getting alerts for comments exclusively, rather than filtering the alerts
-      // from the ref to only those that are also in comments, because codebases can have hundreds (or
-      // even thousands) of existing alerts that will appear on the merge or head ref, while only a
-      // couple alerts are actually surfaced on any of the PRs at any given time, so, in many cases,
-      // this approach will actually require fewer requests to the API that the alternative approach.
+    if (includeRefAlerts === true) {
+      console.log('Include Ref Alerts');
+      alerts = await refAlerts.getAlerts(owner, repos, totalDays, octokit);
+    } else {
+      // Note: I opted to get alerts for comments individually, rather than filtering the alerts
+      // in the ref to only those that are also in the comments, because codebases can have hundreds
+      // (or even thousands) of existing alerts that will appear on the merge or head ref, while only
+      // a couple alerts may actually be surfaced on the PRs at any given time, so, in many cases,
+      // this approach will require fewer requests to the API than the alternative approach.
       console.log('Comment Alerts Only');
       alerts = await commentAlerts.getAlerts(owner, repos, totalDays, octokit);
-    } else {
-      console.log('Ref Alerts');
-      alerts = await refAlerts.getAlerts(owner, repos, totalDays, octokit);
     }
   } catch (error) {
     throw error;
@@ -31639,11 +31639,11 @@ var external_fs_ = __nccwpck_require__(7147);
 
 
 
-async function createReport(owner, repos, totalDays, commentAlertsOnly, path, octokit) {
+async function createReport(owner, repos, totalDays, includeRefAlerts, path, octokit) {
   let alerts = [];
 
   try {
-    alerts = await prAlerts.getAlerts(owner, repos, totalDays, commentAlertsOnly, octokit);
+    alerts = await prAlerts.getAlerts(owner, repos, totalDays, includeRefAlerts, octokit);
 
     if (alerts.length === 0) {
       return 'No PR alerts found.';
@@ -31756,16 +31756,16 @@ async function index_main() {
     const totalDaysInput = core.getInput('total_days');
     const reposInput = core.getInput('repos');
     const path = core.getInput('path');
-    const commentAlertsOnlyInput = core.getInput('comment_alerts_only');
+    const includeRefAlertsInput = core.getInput('include_ref_alerts');
 
-    const { owner, repos, totalDays, commentAlertsOnly } = processInput(
+    const { owner, repos, totalDays, includeRefAlerts } = processInput(
       reposInput,
       totalDaysInput,
-      commentAlertsOnlyInput,
+      includeRefAlertsInput,
       context
     );
 
-    const reportSummary = await alertsReport.createReport(owner, repos, totalDays, commentAlertsOnly, path, octokit);
+    const reportSummary = await alertsReport.createReport(owner, repos, totalDays, includeRefAlerts, path, octokit);
 
     return core.notice(reportSummary);
   } catch (error) {

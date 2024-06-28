@@ -13,16 +13,16 @@ async function main() {
     const totalDaysInput = core.getInput('total_days');
     const reposInput = core.getInput('repos');
     const path = core.getInput('path');
-    const commentAlertsOnlyInput = core.getInput('comment_alerts_only');
+    const includeRefAlertsInput = core.getInput('include_ref_alerts');
 
-    const { owner, repos, totalDays, commentAlertsOnly } = processInput(
+    const { owner, repos, totalDays, includeRefAlerts } = processInput(
       reposInput,
       totalDaysInput,
-      commentAlertsOnlyInput,
+      includeRefAlertsInput,
       context
     );
 
-    const reportSummary = await alertsReport.createReport(owner, repos, totalDays, commentAlertsOnly, path, octokit);
+    const reportSummary = await alertsReport.createReport(owner, repos, totalDays, includeRefAlerts, path, octokit);
 
     return core.notice(reportSummary);
   } catch (error) {
