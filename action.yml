@@ -1,5 +1,5 @@
-name: 'Advanced Security PR Alerts'
-description: 'Gets code scanning alerts from PRs.'
+name: 'Advanced Security PR Alerts CSV'
+description: 'Gets code scanning alerts from PRs and generates a CSV.'
 
 inputs:
   TOKEN:
