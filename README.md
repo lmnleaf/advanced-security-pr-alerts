@@ -59,10 +59,10 @@ jobs:
       - name: Generate CSV
         uses: lmnleaf/advanced-security-pr-alerts@v1.0.0
         with:
-          TOKEN: ${{ secrets.PAT }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
           path: ${{ github.workspace }}
           repos: cool-repo,woot-repo,wow-repo
-          total_days: 365
+          total_days: 7
           include_ref_alerts: true
       - name: Upload CSV
         uses: actions/upload-artifact@v4
