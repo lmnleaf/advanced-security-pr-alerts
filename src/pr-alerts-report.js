@@ -91,7 +91,7 @@ function writeFile (path, data, callback) {
 
 function reportSummary (repos, alerts) {
   let reportSummary = 'Total PR alerts found: ' + alerts.length.toString() + '. \n' +
-    'All org repos reviewed: ' + (repos.length === 0 ? 'true' : 'false') + '. \n' +
+    'All org repos reviewed: ' + (repos.length === 1 && repos[0] === 'all' ? 'true' : 'false') + '. \n' +
     'Repos reviewed: ' + (repos.length > 0 ? repos.join(', ') + '.' : 'All Org Repos.');
 
   return reportSummary;

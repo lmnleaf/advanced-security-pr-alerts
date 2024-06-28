@@ -215,6 +215,18 @@ describe("Alerts Report", function() {
     );
   });
 
+  it ('returns a report summary when the report covers all org repos', async function() {
+    spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve(mockData));
+
+    const reportSummary= await alertsReport.createReport(owner, ['all'], totalDays, includeRefAlerts, path, octokit);
+
+    expect(reportSummary).toEqual(
+      'Total PR alerts found: 3. \n' +
+      'All org repos reviewed: true. \n' +
+      'Repos reviewed: all.'
+    );
+  });
+
   it('returns a report summary when there are no PR alerts', async function() {
     spyOn(prAlerts, 'getAlerts').and.returnValue(Promise.resolve([]));
     const reportSummary= await alertsReport.createReport(owner, repos, totalDays, includeRefAlerts, path, octokit);
