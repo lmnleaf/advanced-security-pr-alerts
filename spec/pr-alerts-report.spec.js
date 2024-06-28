@@ -164,42 +164,42 @@ describe("Alerts Report", function() {
     expect(lines.length).toBe(4);
     expect(lines[0]).toContain(
       'number,rule_id,rule_security_severity_level,rule_severity,description,state,' +
-      'in_pr_comment,' +
+      'repo,in_pr_comment,' +
+      'pr_number,pr_user,pr_state,pr_draft,pr_merged_at,pr_updated_at,' +
       'most_recent_instance_state,most_recent_instance_ref,most_recent_commit_sha,most_recent_instance_path,' + 
       'tool,tool_version,' + 
       'fixed_at,' + 
       'dismissed_at,dismissed_by,dismissed_reason,dismissed_comment,' +
-      'created_at,updated_at,' +
-      'repo,pr_number,pr_user,pr_state,pr_draft,pr_merged_at,pr_updated_at'
+      'created_at,updated_at'
     );
     expect(lines[1]).toContain(
       '43,rule-123,high,critical,This rule detects SQL injection vulnerabilities.,open,' +
-      'false,' +
+      'repo,false,' +
+      '12,cool,closed,false,2023-04-01T12:00:00Z,2023-04-02T12:00:00Z,' +
       'active,refs/heads/main,a1b2c3d4e5f6,/src/database/queries.js,' +
       'CodeScanner,,' +
       '2024-05-01T12:00:00Z,' +
       ',,,,' +
-      '2023-04-01T12:00:00Z,2023-04-02T12:00:00Z,' +
-      'repo,12,cool,closed,false,2023-04-01T12:00:00Z,2023-04-02T12:00:00Z'
+      '2023-04-01T12:00:00Z,2023-04-02T12:00:00Z'
     );
     expect(lines[2]).toContain(
       '42,rule-124,high,critical,This rule detects log injection vulnerabilities.,open,' +
-      'false,' +
+      'repo2,false,' +
+      '11,cool,open,false,,2023-04-15T12:00:00Z,' +
       'active,refs/heads/main,a1b5l3d4e5f6,/src/database/queries.js,' +
       ',1.0.0,' +
       ',,,,,' +
-      '2023-04-15T12:00:00Z,2023-04-15T12:00:00Z,' +
-      'repo2,11,cool,open,false,,2023-04-15T12:00:00Z'
+      '2023-04-15T12:00:00Z,2023-04-15T12:00:00Z'
     );
     expect(lines[3]).toContain(
       '41,rule-124,high,critical,This rule detects log injection vulnerabilities.,open,' +
-      'true,' +
+      'repo,true,' +
+      '10,cool,open,false,,2023-04-02T12:00:00Z,' +
       'active,refs/heads/main,a1b4p7z4e5f6,/src/database/queries.js,' +
       'CodeScanner,1.0.0,' +
       ',' +
       '2024-05-01T12:00:00Z,cool,used in specs,This is used in specs,' +
-      '2023-04-15T12:00:00Z,2023-04-15T12:00:00Z,' +
-      'repo,10,cool,open,false,,2023-04-02T12:00:00Z'
+      '2023-04-15T12:00:00Z,2023-04-15T12:00:00Z'
     );
   });
 

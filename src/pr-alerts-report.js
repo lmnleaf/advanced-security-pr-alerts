@@ -27,7 +27,14 @@ function writeReport (alerts, path) {
     alert.rule.severity,
     alert.rule.description,
     alert.state,
+    alert.pr.repo,
     alert.inPRComment,
+    alert.pr.number,
+    alert.pr.user,
+    alert.pr.state,
+    alert.pr.draft,
+    alert.pr.mergedAt,
+    alert.pr.updatedAt,
     alert.most_recent_instance.state,
     alert.most_recent_instance.ref,
     alert.most_recent_instance.commit_sha,
@@ -40,14 +47,7 @@ function writeReport (alerts, path) {
     alert.dismissed_reason,
     alert.dismissed_comment,
     alert.created_at,
-    alert.updated_at,
-    alert.pr.repo,
-    alert.pr.number,
-    alert.pr.user,
-    alert.pr.state,
-    alert.pr.draft,
-    alert.pr.mergedAt,
-    alert.pr.updatedAt
+    alert.updated_at
   ]);
 
   csvRows.unshift([
@@ -57,7 +57,14 @@ function writeReport (alerts, path) {
     'rule_severity',
     'description',
     'state',
+    'repo',
     'in_pr_comment',
+    'pr_number',
+    'pr_user',
+    'pr_state',
+    'pr_draft',
+    'pr_merged_at',
+    'pr_updated_at',
     'most_recent_instance_state',
     'most_recent_instance_ref',
     'most_recent_commit_sha',
@@ -70,14 +77,7 @@ function writeReport (alerts, path) {
     'dismissed_reason',
     'dismissed_comment',
     'created_at',
-    'updated_at',
-    'repo',
-    'pr_number',
-    'pr_user',
-    'pr_state',
-    'pr_draft',
-    'pr_merged_at',
-    'pr_updated_at'
+    'updated_at'
   ]);
 
   alertsReport.writeFile(path + '/pr-alerts-report.csv', csvRows.join("\r\n"), (error) => {
