@@ -2,6 +2,7 @@ import * as github from '@actions/github';
 import * as core from '@actions/core';
 import * as dotenv from 'dotenv';
 import { alertsReport } from './src/pr-alerts-report.js';
+import { processInput } from './src/process-input.js';
 
 
 const context = github.context;
