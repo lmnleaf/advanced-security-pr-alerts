@@ -13,7 +13,7 @@ Background Info:
 
 <br>
 
-**Configuration Details**
+:sparkles: **Configuration Details**
 * Required input:
   * `TOKEN` - GITHUB_TOKEN or PAT. A PAT is required to get PR alerts for repos other than the repo where the action is used.
   * `path` - the path where the CSV should be written. Note: to upload the CSV as an artifact, use GitHub's [upload-artifact](https://github.com/actions/upload-artifact) action.
@@ -24,7 +24,7 @@ Background Info:
 
 <br>
 
-**Sample CSV Header and Data**
+:file_folder: :page_facing_up: **Sample CSV Header and Data**
 ```
 number,rule_id,rule_security_severity_level,rule_severity,description,state,repo,in_pr_comment,pr_number,pr_user,pr_state,pr_draft,pr_merged_at,pr_updated_at,most_recent_instance_state,most_recent_instance_ref,most_recent_commit_sha,most_recent_instance_path,tool,tool_version,fixed_at,dismissed_at,dismissed_by,dismissed_reason,dismissed_comment,created_at,updated_at
 86,js/code-injection,critical,error,Code injection,open,cool-repo,true,1,cooldev,open,false,,2024-06-28T19:34:19Z,open,refs/pull/1/head,e6e3fc256e0d5711d70ae2c8afb8cdb3fb2dcd2f,routes/showProductReviews.ts,CodeQL,2.17.6,,,,,,2024-06-28T19:34:15Z,2024-06-28T19:34:17Z
@@ -33,7 +33,7 @@ number,rule_id,rule_security_severity_level,rule_severity,description,state,repo
 
 <br>
 
-**Sample Workflow Annotation/Report Summary**
+:card_index: **Sample Workflow Annotation/Report Summary**
 ```
 Total PR alerts found: 151.
 All org repos reviewed: false.
@@ -42,7 +42,7 @@ Repos reviewed: cool-repo, woot-repo, wow-repo.
 
 <br>
 
-**Example Workflow Configuration**
+:space_invader: **Example Workflow Configuration**
 ```
 name: PR Alerts
 
