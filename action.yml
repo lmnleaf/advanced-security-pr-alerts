@@ -1,6 +1,10 @@
 name: 'Advanced Security PR Alerts CSV'
 description: 'Gets code scanning alerts from PRs and generates a CSV.'
 
+branding:
+  icon: 'file-text'
+  color: 'green'
+
 inputs:
   TOKEN:
     description: 'GitHub Token or Personal Access Token  - must use PAT to access alerts for repos other
